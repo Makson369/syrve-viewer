@@ -1,0 +1,13 @@
+{
+  "name": "syrve-viewer",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Перегляд номенклатури Syrve у браузері",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": "22.x"
+  }
+}

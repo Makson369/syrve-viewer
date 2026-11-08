@@ -1,0 +1,742 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Syrve Номенклатура</title>
+<style>
+  :root {
+    --bg: #f6f7f9;
+    --panel: #ffffff;
+    --border: #e2e5ea;
+    --text: #1d2330;
+    --muted: #6b7380;
+    --accent: #2f6fed;
+    --accent-weak: #e8f0fe;
+    --danger: #c62828;
+    --danger-weak: #fdecec;
+    --ok: #1b7a3d;
+    --ok-weak: #e6f4ea;
+    --hl: #fff3b0;
+    --j-key: #8a3ab9;
+    --j-str: #0b7a3e;
+    --j-num: #b35c00;
+    --j-bool: #2f6fed;
+    --j-null: #8c8c8c;
+    --mono: ui-monospace, "Cascadia Code", Consolas, "SFMono-Regular", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14171c;
+      --panel: #1c2027;
+      --border: #2d333d;
+      --text: #e3e6eb;
+      --muted: #8d95a3;
+      --accent: #6b9cff;
+      --accent-weak: #22304a;
+      --danger: #ff7b7b;
+      --danger-weak: #3a2124;
+      --ok: #7fd39b;
+      --ok-weak: #1d3326;
+      --hl: #5a4d12;
+      --j-key: #d19bf0;
+      --j-str: #7fd39b;
+      --j-num: #f0a65c;
+      --j-bool: #7fa8ff;
+      --j-null: #8c8c8c;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  .app {
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    gap: 16px;
+    height: 100vh;
+    padding: 16px;
+  }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .panel-head { padding: 14px 16px; border-bottom: 1px solid var(--border); }
+  h1 { font-size: 16px; margin: 0 0 12px; }
+  h2 { font-size: 14px; margin: 0; }
+  label.field { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  input[type=text], input[type=search] {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: var(--bg);
+    color: var(--text);
+    font: inherit;
+  }
+  input[type=text] { font-family: var(--mono); }
+  input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .row { display: flex; gap: 8px; align-items: center; }
+  .check { display: flex; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); margin: 10px 0; }
+  button {
+    font: inherit;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--text);
+    border-radius: 7px;
+    padding: 7px 12px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  button:hover { border-color: var(--accent); }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; width: 100%; }
+  button:disabled { opacity: .55; cursor: default; }
+  button.small { padding: 3px 8px; font-size: 12px; }
+  .error {
+    margin-top: 10px;
+    padding: 8px 10px;
+    border-radius: 7px;
+    background: var(--danger-weak);
+    color: var(--danger);
+    font-size: 13px;
+    word-break: break-word;
+  }
+  .error .err-title { font-weight: 600; }
+  .error .err-msg { margin-top: 2px; font-family: var(--mono); font-size: 12px; }
+  .error .err-cid { margin-top: 6px; font-family: var(--mono); font-size: 11px; opacity: .8; display: flex; gap: 6px; align-items: center; }
+  .error .err-cid button { border: none; background: none; padding: 0; color: inherit; font-size: 11px; text-decoration: underline; }
+  .ok {
+    margin-top: 10px;
+    padding: 8px 10px;
+    border-radius: 7px;
+    background: var(--ok-weak);
+    color: var(--ok);
+    font-size: 13px;
+  }
+  .hidden { display: none !important; }
+  .muted { color: var(--muted); }
+
+  .orgs-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .orgs { overflow: auto; flex: 1; padding: 6px; }
+  .org {
+    padding: 8px 10px;
+    border-radius: 7px;
+    cursor: pointer;
+    border: 1px solid transparent;
+  }
+  .org:hover { background: var(--bg); }
+  .org.active { background: var(--accent-weak); border-color: var(--accent); }
+  .org .name { font-weight: 500; }
+  .org .id { font-family: var(--mono); font-size: 11px; color: var(--muted); display: flex; gap: 6px; align-items: center; }
+  .org .id span { overflow: hidden; text-overflow: ellipsis; }
+  .copy-id { border: none; background: none; padding: 0 2px; color: var(--muted); font-size: 11px; }
+  .copy-id:hover { color: var(--accent); }
+  .placeholder { padding: 24px 16px; color: var(--muted); text-align: center; }
+
+  .viewer-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .viewer-head h2 { flex: 1; min-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .chip { font-size: 12px; padding: 2px 8px; border-radius: 99px; background: var(--bg); border: 1px solid var(--border); color: var(--muted); }
+  .chip b { color: var(--text); font-weight: 600; }
+  .searchbar { display: flex; gap: 8px; margin-top: 10px; }
+  .viewer-body { flex: 1; min-height: 0; display: flex; }
+  .results {
+    width: 320px;
+    border-right: 1px solid var(--border);
+    overflow: auto;
+    font-size: 12px;
+  }
+  .results-info { padding: 8px 10px; color: var(--muted); border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--panel); }
+  .result { padding: 6px 10px; cursor: pointer; border-bottom: 1px solid var(--border); }
+  .result:hover { background: var(--bg); }
+  .result .p { font-family: var(--mono); color: var(--muted); word-break: break-all; }
+  .result .v { font-family: var(--mono); word-break: break-word; }
+  .result mark { background: var(--hl); color: inherit; }
+
+  .tree { flex: 1; overflow: auto; padding: 10px 12px; font: 12.5px/1.6 var(--mono); }
+  .node .kids { padding-left: 18px; border-left: 1px dashed var(--border); margin-left: 6px; }
+  .line { white-space: nowrap; border-radius: 4px; padding: 0 4px; }
+  .line.expandable { cursor: pointer; }
+  .line.expandable:hover { background: var(--bg); }
+  .line.flash { background: var(--hl); }
+  .tog { display: inline-block; width: 14px; color: var(--muted); user-select: none; }
+  .key { color: var(--j-key); }
+  .idx { color: var(--muted); }
+  .str { color: var(--j-str); white-space: pre-wrap; }
+  .num { color: var(--j-num); }
+  .bool { color: var(--j-bool); }
+  .null { color: var(--j-null); font-style: italic; }
+  .summary { color: var(--muted); font-style: italic; padding: 0 4px; }
+  .preview { color: var(--muted); margin-left: 8px; }
+  .preview::before { content: "— "; }
+  .more { margin: 4px 0 4px 14px; }
+  .loading { padding: 40px; text-align: center; color: var(--muted); }
+  .spinner {
+    display: inline-block; width: 14px; height: 14px; vertical-align: -2px; margin-right: 6px;
+    border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%;
+    animation: spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: var(--text); color: var(--panel); padding: 8px 14px; border-radius: 8px; font-size: 13px;
+    opacity: 0; transition: opacity .2s; pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+
+  @media (max-width: 860px) {
+    .app { grid-template-columns: 1fr; height: auto; min-height: 100vh; }
+    .side { max-height: 60vh; }
+    .viewer { min-height: 80vh; }
+    .viewer-body { flex-direction: column; }
+    .results { width: auto; max-height: 35vh; border-right: none; border-bottom: 1px solid var(--border); }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Ліва панель: apiLogin + організації -->
+  <section class="panel side">
+    <div class="panel-head">
+      <h1>Syrve Номенклатура</h1>
+      <form id="loginForm">
+        <label class="field" for="apiLogin">apiLogin</label>
+        <input type="text" id="apiLogin" list="loginHistory" autocomplete="off" spellcheck="false" placeholder="Вставте apiLogin">
+        <datalist id="loginHistory"></datalist>
+        <label class="check"><input type="checkbox" id="includeDisabled" checked> Включати вимкнені організації</label>
+        <button type="submit" class="primary" id="loadOrgsBtn">Отримати організації</button>
+      </form>
+      <div id="loginError" class="error hidden"></div>
+      <div id="loginOk" class="ok hidden"></div>
+    </div>
+    <div class="panel-head orgs-head hidden" id="orgsHead">
+      <h2 id="orgsTitle">Організації</h2>
+      <button class="small" id="orgsJsonBtn" title="Показати сиру відповідь /organizations">JSON</button>
+    </div>
+    <div class="orgs" id="orgs">
+      <div class="placeholder">Введіть apiLogin, щоб побачити організації</div>
+    </div>
+  </section>
+
+  <!-- Права панель: перегляд JSON -->
+  <section class="panel viewer">
+    <div class="panel-head">
+      <div class="viewer-head">
+        <h2 id="viewerTitle" class="muted">Оберіть організацію</h2>
+        <button class="small" id="collapseBtn" disabled>Згорнути все</button>
+        <button class="small" id="expandBtn" disabled>Розгорнути 2 рівні</button>
+        <button class="small" id="copyBtn" disabled>Копіювати</button>
+        <button class="small" id="downloadBtn" disabled>Завантажити</button>
+      </div>
+      <div class="chips" id="chips"></div>
+      <div class="searchbar">
+        <input type="search" id="search" placeholder="Пошук по ключах і значеннях (назва, id, артикул…)" disabled>
+      </div>
+    </div>
+    <div class="viewer-body">
+      <div class="results hidden" id="results"></div>
+      <div class="tree" id="tree"></div>
+    </div>
+  </section>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const CHUNK = 200;          // скільки дочірніх елементів рендерити за раз
+  const MAX_RESULTS = 500;    // ліміт результатів пошуку
+  const HISTORY_KEY = 'syrve-viewer:logins';
+
+  const state = {
+    apiLogin: null,
+    orgs: [],
+    orgsRaw: null,
+    activeOrgId: null,
+    data: null,
+    raw: null,
+    fileName: 'data.json',
+    root: null,
+    requestSeq: 0,
+  };
+
+  // ---------- утиліти ----------
+  function el(tag, cls, text) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text !== undefined) e.textContent = text;
+    return e;
+  }
+
+  let toastTimer;
+  function toast(msg) {
+    const t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 1600);
+  }
+
+  async function copyText(text, msg) {
+    try { await navigator.clipboard.writeText(text); toast(msg || 'Скопійовано'); }
+    catch { toast('Не вдалося скопіювати'); }
+  }
+
+  function formatBytes(n) {
+    if (n < 1024) return n + ' B';
+    if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB';
+    return (n / 1024 / 1024).toFixed(2) + ' MB';
+  }
+
+  async function api(path, body) {
+    const res = await fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const text = await res.text();
+    if (!res.ok) {
+      let j = {};
+      try { j = JSON.parse(text); } catch {}
+      const err = new Error(j.error || `Помилка ${res.status}`);
+      err.status = j.status || res.status;
+      err.correlationId = j.correlationId;
+      throw err;
+    }
+    return text;
+  }
+
+  // Пояснення до типових кодів помилок Syrve
+  const ERROR_HINTS = {
+    400: 'Некоректний запит',
+    401: 'apiLogin не знайдено або він вимкнений',
+    403: 'Немає доступу до цих даних',
+    404: 'Не знайдено',
+    408: 'Syrve не відповів вчасно',
+    423: 'Ліцензія Cloud API для цього apiLogin закінчилась',
+    429: 'Забагато запитів — спробуйте трохи пізніше',
+    500: 'Внутрішня помилка Syrve',
+    502: 'Syrve тимчасово недоступний',
+    503: 'Syrve тимчасово недоступний',
+    504: 'Syrve не відповів вчасно',
+  };
+
+  function renderError(box, err) {
+    box.innerHTML = '';
+    const hint = ERROR_HINTS[err.status] || 'Помилка';
+    box.appendChild(el('div', 'err-title', err.status ? `${err.status} · ${hint}` : hint));
+    if (err.message && err.message !== hint) box.appendChild(el('div', 'err-msg', err.message));
+    if (err.correlationId) {
+      const cid = el('div', 'err-cid', 'correlationId: ' + err.correlationId);
+      const b = el('button', '', 'копіювати');
+      b.addEventListener('click', () => copyText(err.correlationId, 'correlationId скопійовано'));
+      cid.appendChild(b);
+      box.appendChild(cid);
+    }
+    box.classList.remove('hidden');
+  }
+
+  // ---------- історія apiLogin (лише у цьому браузері) ----------
+  function loadHistory() {
+    try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; } catch { return []; }
+  }
+  function saveHistory(login) {
+    try {
+      const list = [login, ...loadHistory().filter((x) => x !== login)].slice(0, 10);
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(list));
+    } catch {}
+    renderHistory();
+  }
+  function renderHistory() {
+    const dl = $('loginHistory');
+    dl.innerHTML = '';
+    for (const l of loadHistory()) { const o = el('option'); o.value = l; dl.appendChild(o); }
+  }
+
+  // ---------- організації ----------
+  $('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const apiLogin = $('apiLogin').value.trim();
+    const errBox = $('loginError');
+    const okBox = $('loginOk');
+    errBox.classList.add('hidden');
+    okBox.classList.add('hidden');
+    if (!apiLogin) { $('apiLogin').focus(); return; }
+
+    const btn = $('loadOrgsBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Завантаження…';
+    $('orgs').innerHTML = '<div class="loading"><span class="spinner"></span>Отримую організації…</div>';
+    $('orgsHead').classList.add('hidden');
+
+    try {
+      const raw = await api('/api/organizations', { apiLogin, includeDisabled: $('includeDisabled').checked });
+      const data = JSON.parse(raw);
+      state.apiLogin = apiLogin;
+      state.orgsRaw = raw;
+      state.orgs = (data.organizations || []).slice().sort((a, b) => (a.name || '').localeCompare(b.name || '', 'uk'));
+      saveHistory(apiLogin);
+      renderOrgs();
+      okBox.textContent = `✓ apiLogin активний · організацій: ${state.orgs.length}`;
+      okBox.classList.remove('hidden');
+    } catch (err) {
+      renderError(errBox, err);
+      $('orgs').innerHTML = '<div class="placeholder">Не вдалося отримати організації</div>';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Отримати організації';
+    }
+  });
+
+  function renderOrgs() {
+    const box = $('orgs');
+    box.innerHTML = '';
+    $('orgsHead').classList.remove('hidden');
+    $('orgsTitle').textContent = `Організації (${state.orgs.length})`;
+    if (!state.orgs.length) {
+      box.appendChild(el('div', 'placeholder', 'Організацій не знайдено'));
+      return;
+    }
+    for (const org of state.orgs) {
+      const item = el('div', 'org');
+      item.dataset.id = org.id;
+      item.appendChild(el('div', 'name', org.name || '(без назви)'));
+      const idLine = el('div', 'id');
+      idLine.appendChild(el('span', '', org.id));
+      const copy = el('button', 'copy-id', '⧉');
+      copy.title = 'Копіювати id';
+      copy.addEventListener('click', (e) => { e.stopPropagation(); copyText(org.id, 'id скопійовано'); });
+      idLine.appendChild(copy);
+      item.appendChild(idLine);
+      item.addEventListener('click', () => loadNomenclature(org));
+      box.appendChild(item);
+    }
+  }
+
+  $('orgsJsonBtn').addEventListener('click', () => {
+    if (!state.orgsRaw) return;
+    setActiveOrg(null);
+    showJson(state.orgsRaw, 'Організації (сира відповідь)', 'organizations.json');
+  });
+
+  function setActiveOrg(id) {
+    state.activeOrgId = id;
+    for (const item of $('orgs').querySelectorAll('.org')) item.classList.toggle('active', item.dataset.id === id);
+  }
+
+  // ---------- номенклатура ----------
+  async function loadNomenclature(org) {
+    const seq = ++state.requestSeq;
+    setActiveOrg(org.id);
+    setViewerEnabled(false);
+    $('viewerTitle').textContent = org.name || org.id;
+    $('viewerTitle').classList.remove('muted');
+    $('chips').innerHTML = '';
+    $('results').classList.add('hidden');
+    $('tree').innerHTML = '<div class="loading"><span class="spinner"></span>Отримую номенклатуру… для великих закладів це може зайняти до хвилини</div>';
+
+    try {
+      const raw = await api('/api/nomenclature', { apiLogin: state.apiLogin, organizationId: org.id, startRevision: 0 });
+      if (seq !== state.requestSeq) return; // користувач вже обрав іншу організацію
+      const safeName = (org.name || org.id).replace(/[\\/:*?"<>|]+/g, '_');
+      showJson(raw, org.name || org.id, `nomenclature_${safeName}.json`);
+    } catch (err) {
+      if (seq !== state.requestSeq) return;
+      $('tree').innerHTML = '';
+      const box = el('div', 'error');
+      renderError(box, err);
+      $('tree').appendChild(box);
+    }
+  }
+
+  // ---------- перегляд JSON ----------
+  function setViewerEnabled(on) {
+    for (const id of ['collapseBtn', 'expandBtn', 'copyBtn', 'downloadBtn', 'search']) $(id).disabled = !on;
+    if (!on) $('search').value = '';
+  }
+
+  function showJson(raw, title, fileName) {
+    let data;
+    try { data = JSON.parse(raw); }
+    catch { $('tree').innerHTML = ''; $('tree').appendChild(el('div', 'error', 'Відповідь не є коректним JSON')); return; }
+
+    state.raw = raw;
+    state.data = data;
+    state.fileName = fileName;
+    $('viewerTitle').textContent = title;
+    $('viewerTitle').classList.remove('muted');
+    $('search').value = '';
+    $('results').classList.add('hidden');
+    renderChips(data, raw);
+    renderTree(1);
+    setViewerEnabled(true);
+  }
+
+  function renderChips(data, raw) {
+    const chips = $('chips');
+    chips.innerHTML = '';
+    const add = (label, value) => {
+      const c = el('span', 'chip');
+      c.append(label + ': ');
+      c.appendChild(el('b', '', String(value)));
+      chips.appendChild(c);
+    };
+    if (data && typeof data === 'object' && !Array.isArray(data)) {
+      for (const [k, v] of Object.entries(data)) {
+        if (Array.isArray(v)) add(k, v.length);
+      }
+      if ('revision' in data) add('revision', data.revision);
+    }
+    add('рядків', countLines(data).toLocaleString('uk-UA'));
+    add('розмір', formatBytes(new Blob([raw]).size));
+  }
+
+  // Кількість рядків у відформатованому JSON (як у Postman), без побудови самого рядка
+  function countLines(v) {
+    if (v === null || typeof v !== 'object') return 1;
+    const children = Array.isArray(v) ? v : Object.values(v);
+    if (!children.length) return 1; // {} або []
+    let n = 2; // відкриваюча і закриваюча дужки
+    for (const c of children) n += countLines(c);
+    return n;
+  }
+
+  function renderTree(openDepth) {
+    const tree = $('tree');
+    tree.innerHTML = '';
+    state.root = createNode(undefined, state.data, false);
+    tree.appendChild(state.root);
+    expandToDepth(state.root, openDepth);
+  }
+
+  function primitive(v) {
+    if (v === null) return el('span', 'null', 'null');
+    switch (typeof v) {
+      case 'string': return el('span', 'str', JSON.stringify(v));
+      case 'number': return el('span', 'num', String(v));
+      case 'boolean': return el('span', 'bool', String(v));
+      default: return el('span', '', String(v));
+    }
+  }
+
+  function createNode(key, value, isIndex) {
+    const node = el('div', 'node');
+    const line = el('div', 'line');
+    node.appendChild(line);
+    const expandable = value !== null && typeof value === 'object';
+
+    line.appendChild(el('span', 'tog', expandable ? '▸' : ''));
+    if (key !== undefined) {
+      line.appendChild(el('span', isIndex ? 'idx' : 'key', isIndex ? String(key) : JSON.stringify(key)));
+      line.appendChild(document.createTextNode(': '));
+    }
+
+    if (!expandable) {
+      line.appendChild(primitive(value));
+      return node;
+    }
+
+    const isArr = Array.isArray(value);
+    const count = isArr ? value.length : Object.keys(value).length;
+    line.classList.add('expandable');
+    line.append(isArr ? '[' : '{');
+    line.appendChild(el('span', 'summary', count ? (isArr ? `${count} елем.` : `${count} полів`) : ''));
+    line.append(isArr ? ']' : '}');
+    if (!isArr && typeof value.name === 'string' && value.name) line.appendChild(el('span', 'preview', value.name));
+
+    node._value = value;
+    node._isArr = isArr;
+    node._expanded = false;
+    line.addEventListener('click', (e) => {
+      if (window.getSelection().toString()) return; // не згортати під час виділення тексту
+      setExpanded(node, !node._expanded);
+    });
+    return node;
+  }
+
+  function entriesOf(node) {
+    if (!node._entries) node._entries = node._isArr ? node._value.map((v, i) => [i, v]) : Object.entries(node._value);
+    return node._entries;
+  }
+
+  function setExpanded(node, open) {
+    if (node._value === undefined) return;
+    node._expanded = open;
+    node.firstChild.firstChild.textContent = open ? '▾' : '▸';
+    if (open && !node._kids) {
+      node._kids = el('div', 'kids');
+      node._rendered = 0;
+      node.appendChild(node._kids);
+      renderKids(node, CHUNK);
+    }
+    if (node._kids) node._kids.classList.toggle('hidden', !open);
+  }
+
+  function renderKids(node, upTo) {
+    const entries = entriesOf(node);
+    const end = Math.min(upTo, entries.length);
+    if (node._moreBtn) { node._moreBtn.remove(); node._moreBtn = null; }
+    const frag = document.createDocumentFragment();
+    for (let i = node._rendered; i < end; i++) {
+      const [k, v] = entries[i];
+      frag.appendChild(createNode(k, v, node._isArr));
+    }
+    node._kids.appendChild(frag);
+    node._rendered = end;
+
+    const left = entries.length - end;
+    if (left > 0) {
+      const btn = el('button', 'small more', `Показати ще ${Math.min(left, CHUNK)} (залишилось ${left})`);
+      btn.addEventListener('click', () => renderKids(node, node._rendered + CHUNK));
+      node._kids.appendChild(btn);
+      node._moreBtn = btn;
+    }
+  }
+
+  function expandToDepth(node, depth) {
+    if (depth <= 0 || node._value === undefined) return;
+    setExpanded(node, true);
+    if (depth > 1) for (let i = 0; i < node._rendered; i++) expandToDepth(node._kids.children[i], depth - 1);
+  }
+
+  $('collapseBtn').addEventListener('click', () => renderTree(1));
+  $('expandBtn').addEventListener('click', () => renderTree(2));
+  $('copyBtn').addEventListener('click', () => copyText(state.raw, 'JSON скопійовано'));
+  $('downloadBtn').addEventListener('click', () => {
+    const pretty = JSON.stringify(state.data, null, 2);
+    const url = URL.createObjectURL(new Blob([pretty], { type: 'application/json' }));
+    const a = el('a');
+    a.href = url;
+    a.download = state.fileName;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  });
+
+  // Розгортає дерево до вказаного шляху і підсвічує вузол
+  function reveal(path) {
+    let node = state.root;
+    for (const step of path) {
+      setExpanded(node, true);
+      const entries = entriesOf(node);
+      const idx = node._isArr ? step : entries.findIndex(([k]) => k === step);
+      if (idx < 0) return;
+      if (idx >= node._rendered) renderKids(node, Math.ceil((idx + 1) / CHUNK) * CHUNK);
+      node = node._kids.children[idx];
+    }
+    const line = node.firstChild;
+    line.scrollIntoView({ block: 'center' });
+    line.classList.remove('flash');
+    void line.offsetWidth;
+    line.classList.add('flash');
+    setTimeout(() => line.classList.remove('flash'), 1800);
+  }
+
+  // ---------- пошук ----------
+  function formatPath(path) {
+    let s = '';
+    for (const p of path) s += typeof p === 'number' ? `[${p}]` : (s ? '.' : '') + p;
+    return s || '(корінь)';
+  }
+
+  function search(q) {
+    const needle = q.toLowerCase();
+    const results = [];
+    let total = 0;
+    const walk = (v, path) => {
+      if (v !== null && typeof v === 'object') {
+        if (Array.isArray(v)) {
+          for (let i = 0; i < v.length; i++) walk(v[i], path.concat(i));
+        } else {
+          for (const k of Object.keys(v)) {
+            const p = path.concat(k);
+            if (k.toLowerCase().includes(needle)) { total++; if (results.length < MAX_RESULTS) results.push({ path: p, value: v[k] }); }
+            walk(v[k], p);
+          }
+        }
+      } else if (v !== null && String(v).toLowerCase().includes(needle)) {
+        total++;
+        if (results.length < MAX_RESULTS) results.push({ path, value: v });
+      }
+    };
+    walk(state.data, []);
+    return { results, total };
+  }
+
+  // Шукає найближчий об'єкт з полем name на шляху — щоб було видно, до якого товару/групи відноситься збіг
+  function contextName(path) {
+    let v = state.data;
+    let name = null;
+    for (const step of path) {
+      if (v && typeof v === 'object' && !Array.isArray(v) && typeof v.name === 'string') name = v.name;
+      v = v[step];
+    }
+    if (v && typeof v === 'object' && !Array.isArray(v) && typeof v.name === 'string') name = v.name;
+    return name;
+  }
+
+  function highlight(text, q) {
+    const frag = document.createDocumentFragment();
+    const lower = text.toLowerCase();
+    const needle = q.toLowerCase();
+    let i = 0;
+    while (true) {
+      const j = lower.indexOf(needle, i);
+      if (j < 0) break;
+      frag.append(text.slice(i, j));
+      frag.appendChild(el('mark', '', text.slice(j, j + needle.length)));
+      i = j + needle.length;
+    }
+    frag.append(text.slice(i));
+    return frag;
+  }
+
+  function renderResults(q) {
+    const box = $('results');
+    box.innerHTML = '';
+    if (q.length < 2) { box.classList.add('hidden'); return; }
+    const { results, total } = search(q);
+    box.classList.remove('hidden');
+    const info = el('div', 'results-info',
+      total === 0 ? 'Нічого не знайдено' :
+      total > results.length ? `Знайдено ${total}, показано перші ${results.length}` : `Знайдено ${total}`);
+    box.appendChild(info);
+
+    for (const r of results) {
+      const item = el('div', 'result');
+      const ctx = contextName(r.path);
+      const p = el('div', 'p');
+      p.appendChild(highlight(formatPath(r.path), q));
+      item.appendChild(p);
+      let shown;
+      if (r.value !== null && typeof r.value === 'object') shown = Array.isArray(r.value) ? `[${r.value.length} елем.]` : '{…}';
+      else shown = typeof r.value === 'string' ? JSON.stringify(r.value) : String(r.value);
+      if (shown.length > 160) shown = shown.slice(0, 160) + '…';
+      const v = el('div', 'v');
+      v.appendChild(highlight(shown, q));
+      item.appendChild(v);
+      if (ctx) item.appendChild(el('div', 'muted', '↳ ' + ctx));
+      item.addEventListener('click', () => reveal(r.path));
+      box.appendChild(item);
+    }
+  }
+
+  let searchTimer;
+  $('search').addEventListener('input', (e) => {
+    clearTimeout(searchTimer);
+    const q = e.target.value.trim();
+    searchTimer = setTimeout(() => renderResults(q), 250);
+  });
+
+  renderHistory();
+})();
+</script>
+</body>
+</html>
