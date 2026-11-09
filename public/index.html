@@ -215,7 +215,7 @@
     <div class="panel-head">
       <div class="title-row">
         <h1>Syrve Номенклатура</h1>
-        <div class="seg" role="group" aria-label="Метод отримання токена">
+        <div class="seg hidden" id="authSeg" role="group" aria-label="Метод отримання токена">
           <button type="button" data-mode="v1" title="/api/1/access_token з apiLogin">V1</button>
           <button type="button" data-mode="v2" title="/api/v2/access_token з apiKey + appId + clientSecret">V2</button>
         </div>
@@ -285,6 +285,7 @@
   const MODE_KEY = 'syrve-viewer:authMode';
   const APP_KEY = 'syrve-viewer:v2app'; // appId + clientSecret — лише у цьому браузері
   const APP_SOURCE_KEY = 'syrve-viewer:v2appSource'; // 'server' | 'manual'
+  const SHOW_V2 = false; // перемикач V1/V2 поки прихований — працює лише V1
 
   const state = {
     mode: 'v1',
@@ -835,7 +836,8 @@
   loadServerApp();
   let savedMode = 'v1';
   try { savedMode = localStorage.getItem(MODE_KEY) || 'v1'; } catch {}
-  setMode(savedMode);
+  $('authSeg').classList.toggle('hidden', !SHOW_V2);
+  setMode(SHOW_V2 ? savedMode : 'v1');
 })();
 </script>
 </body>
