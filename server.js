@@ -8,13 +8,15 @@ const zlib = require('zlib');
 
 const PORT = process.env.PORT || 3000;
 const SYRVE_API = (process.env.SYRVE_API || 'https://api-eu.syrve.live/api/1').replace(/\/+$/, '');
+// Токен v2 (/api/v2/access_token): apiKey + appId + clientSecret застосунку з Syrve Developer Portal
+const SYRVE_API_V2 = SYRVE_API.replace(/\/api\/1$/, '/api/v2');
 const TOKEN_TTL_MS = 50 * 60 * 1000; // токен Syrve живе ~60 хв, оновлюємо раніше
 const REQUEST_TIMEOUT_MS = 180 * 1000;
 const MAX_BODY_BYTES = 64 * 1024;
 
 const INDEX_HTML = path.join(__dirname, 'public', 'index.html');
 
-// apiLogin -> { token, exp }
+// ключ авторизації (див. cacheKey) -> { token, exp }
 const tokenCache = new Map();
 
 class SyrveError extends Error {
@@ -26,13 +28,13 @@ class SyrveError extends Error {
   }
 }
 
-async function syrvePost(endpoint, body, token) {
+async function syrvePost(endpoint, body, token, base = SYRVE_API) {
   const headers = { 'Content-Type': 'application/json' };
   if (token) headers.Authorization = `Bearer ${token}`;
 
   let res;
   try {
-    res = await fetch(SYRVE_API + endpoint, {
+    res = await fetch(base + endpoint, {
       method: 'POST',
       headers,
       body: JSON.stringify(body),
@@ -58,25 +60,46 @@ async function syrvePost(endpoint, body, token) {
   return text;
 }
 
-async function getToken(apiLogin, force = false) {
-  const cached = tokenCache.get(apiLogin);
+// v1: { v: 1, apiLogin }; v2: { v: 2, apiKey, appId, clientSecret }.
+// appId / clientSecret для v2 можна не передавати, якщо вони задані у змінних середовища.
+function readAuth(body) {
+  if (Number(body.authVersion) === 2) {
+    return {
+      v: 2,
+      apiKey: requireString(body.apiKey, 'apiKey'),
+      appId: requireString(body.appId || process.env.SYRVE_APP_ID, 'appId'),
+      clientSecret: requireString(body.clientSecret || process.env.SYRVE_CLIENT_SECRET, 'clientSecret'),
+    };
+  }
+  return { v: 1, apiLogin: requireString(body.apiLogin, 'apiLogin') };
+}
+
+function cacheKey(auth) {
+  return auth.v === 2 ? `v2:${auth.appId}:${auth.apiKey}:${auth.clientSecret}` : `v1:${auth.apiLogin}`;
+}
+
+async function getToken(auth, force = false) {
+  const key = cacheKey(auth);
+  const cached = tokenCache.get(key);
   if (!force && cached && cached.exp > Date.now()) return cached.token;
 
-  const text = await syrvePost('/access_token', { apiLogin });
+  const text = auth.v === 2
+    ? await syrvePost('/access_token', { apiKey: auth.apiKey, appId: auth.appId, clientSecret: auth.clientSecret }, null, SYRVE_API_V2)
+    : await syrvePost('/access_token', { apiLogin: auth.apiLogin });
   const token = JSON.parse(text).token;
   if (!token) throw new SyrveError(502, 'Syrve не повернув токен');
-  tokenCache.set(apiLogin, { token, exp: Date.now() + TOKEN_TTL_MS });
+  tokenCache.set(key, { token, exp: Date.now() + TOKEN_TTL_MS });
   return token;
 }
 
 // Виконує запит з токеном; якщо токен прострочився (401) — оновлює і пробує ще раз.
-async function withToken(apiLogin, fn) {
+async function withToken(auth, fn) {
   try {
-    return await fn(await getToken(apiLogin));
+    return await fn(await getToken(auth));
   } catch (err) {
     if (err instanceof SyrveError && err.status === 401) {
-      tokenCache.delete(apiLogin);
-      return fn(await getToken(apiLogin, true));
+      tokenCache.delete(cacheKey(auth));
+      return fn(await getToken(auth, true));
     }
     throw err;
   }
@@ -129,8 +152,8 @@ function requireString(value, name) {
 
 const routes = {
   'POST /api/organizations': async (body) => {
-    const apiLogin = requireString(body.apiLogin, 'apiLogin');
-    return withToken(apiLogin, (token) =>
+    const auth = readAuth(body);
+    return withToken(auth, (token) =>
       syrvePost('/organizations', {
         organizationIds: null,
         returnAdditionalInfo: body.returnAdditionalInfo === true,
@@ -139,10 +162,10 @@ const routes = {
   },
 
   'POST /api/nomenclature': async (body) => {
-    const apiLogin = requireString(body.apiLogin, 'apiLogin');
+    const auth = readAuth(body);
     const organizationId = requireString(body.organizationId, 'organizationId');
     const startRevision = Number.isFinite(body.startRevision) ? body.startRevision : 0;
-    return withToken(apiLogin, (token) =>
+    return withToken(auth, (token) =>
       syrvePost('/nomenclature', { organizationId, startRevision }, token));
   },
 };

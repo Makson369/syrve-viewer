@@ -73,7 +73,7 @@
   h1 { font-size: 16px; margin: 0 0 12px; }
   h2 { font-size: 14px; margin: 0; }
   label.field { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
-  input[type=text], input[type=search] {
+  input[type=text], input[type=search], input[type=password] {
     width: 100%;
     padding: 8px 10px;
     border: 1px solid var(--border);
@@ -82,7 +82,14 @@
     color: var(--text);
     font: inherit;
   }
-  input[type=text] { font-family: var(--mono); }
+  input[type=text], input[type=password] { font-family: var(--mono); }
+  .title-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .title-row h1 { margin: 0; }
+  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 7px; overflow: hidden; }
+  .seg button { border: none; border-radius: 0; padding: 3px 10px; font-size: 12px; color: var(--muted); }
+  .seg button + button { border-left: 1px solid var(--border); }
+  .seg button.active { background: var(--accent); color: #fff; }
+  .v2-fields label.field { margin-top: 8px; }
   input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
   .row { display: flex; gap: 8px; align-items: center; }
   .check { display: flex; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); margin: 10px 0; }
@@ -206,11 +213,23 @@
   <!-- Ліва панель: apiLogin + організації -->
   <section class="panel side">
     <div class="panel-head">
-      <h1>Syrve Номенклатура</h1>
+      <div class="title-row">
+        <h1>Syrve Номенклатура</h1>
+        <div class="seg" role="group" aria-label="Метод отримання токена">
+          <button type="button" data-mode="v1" title="/api/1/access_token з apiLogin">V1</button>
+          <button type="button" data-mode="v2" title="/api/v2/access_token з apiKey + appId + clientSecret">V2</button>
+        </div>
+      </div>
       <form id="loginForm">
-        <label class="field" for="apiLogin">apiLogin</label>
+        <label class="field" for="apiLogin" id="apiLoginLabel">apiLogin</label>
         <input type="text" id="apiLogin" list="loginHistory" autocomplete="off" spellcheck="false" placeholder="Вставте apiLogin">
         <datalist id="loginHistory"></datalist>
+        <div class="v2-fields hidden" id="v2Fields">
+          <label class="field" for="appId">appId</label>
+          <input type="text" id="appId" autocomplete="off" spellcheck="false" placeholder="ID застосунку з Developer Portal">
+          <label class="field" for="clientSecret">clientSecret</label>
+          <input type="password" id="clientSecret" autocomplete="off" spellcheck="false" placeholder="Секрет застосунку">
+        </div>
         <label class="check"><input type="checkbox" id="includeDisabled" checked> Включати вимкнені організації</label>
         <label class="check"><input type="checkbox" id="returnAdditionalInfo" checked> Додаткова інформація (returnAdditionalInfo)</label>
         <button type="submit" class="primary" id="loadOrgsBtn">Отримати організації</button>
@@ -256,9 +275,13 @@
   const CHUNK = 200;          // скільки дочірніх елементів рендерити за раз
   const MAX_RESULTS = 500;    // ліміт результатів пошуку
   const HISTORY_KEY = 'syrve-viewer:logins';
+  const HISTORY_KEY_V2 = 'syrve-viewer:apiKeys';
+  const MODE_KEY = 'syrve-viewer:authMode';
+  const APP_KEY = 'syrve-viewer:v2app'; // appId + clientSecret — лише у цьому браузері
 
   const state = {
-    apiLogin: null,
+    mode: 'v1',
+    auth: null, // тіло авторизації для /api/*, з яким організації завантажились успішно
     orgs: [],
     orgsRaw: null,
     activeOrgId: null,
@@ -319,6 +342,7 @@
   const ERROR_HINTS = {
     400: 'Некоректний запит',
     401: 'apiLogin не знайдено або він вимкнений',
+    '401v2': 'Невірний apiKey, appId або clientSecret',
     403: 'Немає доступу до цих даних',
     404: 'Не знайдено',
     408: 'Syrve не відповів вчасно',
@@ -332,7 +356,7 @@
 
   function renderError(box, err) {
     box.innerHTML = '';
-    const hint = ERROR_HINTS[err.status] || 'Помилка';
+    const hint = (state.mode === 'v2' && ERROR_HINTS[err.status + 'v2']) || ERROR_HINTS[err.status] || 'Помилка';
     box.appendChild(el('div', 'err-title', err.status ? `${err.status} · ${hint}` : hint));
     if (err.message && err.message !== hint) box.appendChild(el('div', 'err-msg', err.message));
     if (err.correlationId) {
@@ -345,16 +369,43 @@
     box.classList.remove('hidden');
   }
 
-  // ---------- історія apiLogin (лише у цьому браузері) ----------
+  // ---------- історія apiLogin / apiKey (лише у цьому браузері) ----------
+  const historyKey = () => (state.mode === 'v2' ? HISTORY_KEY_V2 : HISTORY_KEY);
   function loadHistory() {
-    try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; } catch { return []; }
+    try { return JSON.parse(localStorage.getItem(historyKey())) || []; } catch { return []; }
   }
   function saveHistory(login) {
     try {
       const list = [login, ...loadHistory().filter((x) => x !== login)].slice(0, 10);
-      localStorage.setItem(HISTORY_KEY, JSON.stringify(list));
+      localStorage.setItem(historyKey(), JSON.stringify(list));
     } catch {}
     renderHistory();
+  }
+
+  // ---------- перемикач V1 / V2 ----------
+  function setMode(mode) {
+    state.mode = mode === 'v2' ? 'v2' : 'v1';
+    const v2 = state.mode === 'v2';
+    for (const b of document.querySelectorAll('.seg button')) b.classList.toggle('active', b.dataset.mode === state.mode);
+    $('v2Fields').classList.toggle('hidden', !v2);
+    $('apiLoginLabel').textContent = v2 ? 'apiKey' : 'apiLogin';
+    $('apiLogin').placeholder = v2 ? 'Вставте apiKey' : 'Вставте apiLogin';
+    $('loginError').classList.add('hidden');
+    $('loginOk').classList.add('hidden');
+    try { localStorage.setItem(MODE_KEY, state.mode); } catch {}
+    renderHistory();
+  }
+  for (const b of document.querySelectorAll('.seg button')) b.addEventListener('click', () => setMode(b.dataset.mode));
+
+  function loadApp() {
+    try {
+      const a = JSON.parse(localStorage.getItem(APP_KEY)) || {};
+      $('appId').value = a.appId || '';
+      $('clientSecret').value = a.clientSecret || '';
+    } catch {}
+  }
+  function saveApp(appId, clientSecret) {
+    try { localStorage.setItem(APP_KEY, JSON.stringify({ appId, clientSecret })); } catch {}
   }
   function renderHistory() {
     const dl = $('loginHistory');
@@ -378,19 +429,25 @@
     $('orgs').innerHTML = '<div class="loading"><span class="spinner"></span>Отримую організації…</div>';
     $('orgsHead').classList.add('hidden');
 
+    const v2 = state.mode === 'v2';
+    const appId = $('appId').value.trim();
+    const clientSecret = $('clientSecret').value.trim();
+    const auth = v2 ? { authVersion: 2, apiKey: apiLogin, appId, clientSecret } : { authVersion: 1, apiLogin };
+
     try {
       const raw = await api('/api/organizations', {
-        apiLogin,
+        ...auth,
         includeDisabled: $('includeDisabled').checked,
         returnAdditionalInfo: $('returnAdditionalInfo').checked,
       });
       const data = JSON.parse(raw);
-      state.apiLogin = apiLogin;
+      state.auth = auth;
       state.orgsRaw = raw;
       state.orgs = (data.organizations || []).slice().sort((a, b) => (a.name || '').localeCompare(b.name || '', 'uk'));
       saveHistory(apiLogin);
+      if (v2) saveApp(appId, clientSecret);
       renderOrgs();
-      okBox.textContent = `✓ apiLogin активний · організацій: ${state.orgs.length}`;
+      okBox.textContent = `✓ ${v2 ? 'Токен v2 отримано' : 'apiLogin активний'} · організацій: ${state.orgs.length}`;
       okBox.classList.remove('hidden');
     } catch (err) {
       renderError(errBox, err);
@@ -449,7 +506,7 @@
     $('tree').innerHTML = '<div class="loading"><span class="spinner"></span>Отримую номенклатуру… для великих закладів це може зайняти до хвилини</div>';
 
     try {
-      const raw = await api('/api/nomenclature', { apiLogin: state.apiLogin, organizationId: org.id, startRevision: 0 });
+      const raw = await api('/api/nomenclature', { ...state.auth, organizationId: org.id, startRevision: 0 });
       if (seq !== state.requestSeq) return; // користувач вже обрав іншу організацію
       const safeName = (org.name || org.id).replace(/[\\/:*?"<>|]+/g, '_');
       showJson(raw, org.name || org.id, `nomenclature_${safeName}.json`);
@@ -740,7 +797,10 @@
     searchTimer = setTimeout(() => renderResults(q), 250);
   });
 
-  renderHistory();
+  loadApp();
+  let savedMode = 'v1';
+  try { savedMode = localStorage.getItem(MODE_KEY) || 'v1'; } catch {}
+  setMode(savedMode);
 })();
 </script>
 </body>
