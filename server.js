@@ -151,6 +151,15 @@ function requireString(value, name) {
 }
 
 const routes = {
+  // Що сторінка може показати у виборі застосунку v2. clientSecret назовні не віддається.
+  'GET /api/config': async () => {
+    const appId = (process.env.SYRVE_APP_ID || '').trim();
+    const hasSecret = Boolean((process.env.SYRVE_CLIENT_SECRET || '').trim());
+    return {
+      v2App: appId && hasSecret ? { appId, name: (process.env.SYRVE_APP_NAME || '').trim() || 'Застосунок сервера' } : null,
+    };
+  },
+
   'POST /api/organizations': async (body) => {
     const auth = readAuth(body);
     return withToken(auth, (token) =>

@@ -73,7 +73,7 @@
   h1 { font-size: 16px; margin: 0 0 12px; }
   h2 { font-size: 14px; margin: 0; }
   label.field { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
-  input[type=text], input[type=search], input[type=password] {
+  input[type=text], input[type=search], input[type=password], select {
     width: 100%;
     padding: 8px 10px;
     border: 1px solid var(--border);
@@ -225,10 +225,16 @@
         <input type="text" id="apiLogin" list="loginHistory" autocomplete="off" spellcheck="false" placeholder="Вставте apiLogin">
         <datalist id="loginHistory"></datalist>
         <div class="v2-fields hidden" id="v2Fields">
-          <label class="field" for="appId">appId</label>
-          <input type="text" id="appId" autocomplete="off" spellcheck="false" placeholder="ID застосунку з Developer Portal">
-          <label class="field" for="clientSecret">clientSecret</label>
-          <input type="password" id="clientSecret" autocomplete="off" spellcheck="false" placeholder="Секрет застосунку">
+          <label class="field" for="appSource">Застосунок</label>
+          <select id="appSource">
+            <option value="manual">Ввести вручну</option>
+          </select>
+          <div id="manualApp">
+            <label class="field" for="appId">appId</label>
+            <input type="text" id="appId" autocomplete="off" spellcheck="false" placeholder="ID застосунку з Developer Portal">
+            <label class="field" for="clientSecret">clientSecret</label>
+            <input type="password" id="clientSecret" autocomplete="off" spellcheck="false" placeholder="Секрет застосунку">
+          </div>
         </div>
         <label class="check"><input type="checkbox" id="includeDisabled" checked> Включати вимкнені організації</label>
         <label class="check"><input type="checkbox" id="returnAdditionalInfo" checked> Додаткова інформація (returnAdditionalInfo)</label>
@@ -278,6 +284,7 @@
   const HISTORY_KEY_V2 = 'syrve-viewer:apiKeys';
   const MODE_KEY = 'syrve-viewer:authMode';
   const APP_KEY = 'syrve-viewer:v2app'; // appId + clientSecret — лише у цьому браузері
+  const APP_SOURCE_KEY = 'syrve-viewer:v2appSource'; // 'server' | 'manual'
 
   const state = {
     mode: 'v1',
@@ -407,6 +414,30 @@
   function saveApp(appId, clientSecret) {
     try { localStorage.setItem(APP_KEY, JSON.stringify({ appId, clientSecret })); } catch {}
   }
+
+  // Застосунок із Service Variables сервера (appId + clientSecret зберігаються лише там)
+  function setAppSource(src) {
+    const sel = $('appSource');
+    sel.value = [...sel.options].some((o) => o.value === src) ? src : 'manual';
+    $('manualApp').classList.toggle('hidden', sel.value !== 'manual');
+  }
+  $('appSource').addEventListener('change', () => {
+    setAppSource($('appSource').value);
+    try { localStorage.setItem(APP_SOURCE_KEY, $('appSource').value); } catch {}
+  });
+  async function loadServerApp() {
+    let saved = null;
+    try { saved = localStorage.getItem(APP_SOURCE_KEY); } catch {}
+    try {
+      const cfg = await (await fetch('/api/config')).json();
+      if (cfg.v2App) {
+        const o = el('option', '', `${cfg.v2App.name} (${cfg.v2App.appId})`);
+        o.value = 'server';
+        $('appSource').prepend(o);
+      }
+    } catch {}
+    setAppSource(saved || 'server');
+  }
   function renderHistory() {
     const dl = $('loginHistory');
     dl.innerHTML = '';
@@ -430,9 +461,12 @@
     $('orgsHead').classList.add('hidden');
 
     const v2 = state.mode === 'v2';
+    const manualApp = $('appSource').value === 'manual';
     const appId = $('appId').value.trim();
     const clientSecret = $('clientSecret').value.trim();
-    const auth = v2 ? { authVersion: 2, apiKey: apiLogin, appId, clientSecret } : { authVersion: 1, apiLogin };
+    const auth = !v2 ? { authVersion: 1, apiLogin }
+      : manualApp ? { authVersion: 2, apiKey: apiLogin, appId, clientSecret }
+      : { authVersion: 2, apiKey: apiLogin }; // appId/clientSecret сервер бере зі своїх змінних
 
     try {
       const raw = await api('/api/organizations', {
@@ -445,7 +479,7 @@
       state.orgsRaw = raw;
       state.orgs = (data.organizations || []).slice().sort((a, b) => (a.name || '').localeCompare(b.name || '', 'uk'));
       saveHistory(apiLogin);
-      if (v2) saveApp(appId, clientSecret);
+      if (v2 && manualApp) saveApp(appId, clientSecret);
       renderOrgs();
       okBox.textContent = `✓ ${v2 ? 'Токен v2 отримано' : 'apiLogin активний'} · організацій: ${state.orgs.length}`;
       okBox.classList.remove('hidden');
@@ -798,6 +832,7 @@
   });
 
   loadApp();
+  loadServerApp();
   let savedMode = 'v1';
   try { savedMode = localStorage.getItem(MODE_KEY) || 'v1'; } catch {}
   setMode(savedMode);
