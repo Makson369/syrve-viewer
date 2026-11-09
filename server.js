@@ -133,7 +133,7 @@ const routes = {
     return withToken(apiLogin, (token) =>
       syrvePost('/organizations', {
         organizationIds: null,
-        returnAdditionalInfo: false,
+        returnAdditionalInfo: body.returnAdditionalInfo === true,
         includeDisabled: body.includeDisabled !== false,
       }, token));
   },

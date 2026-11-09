@@ -212,6 +212,7 @@
         <input type="text" id="apiLogin" list="loginHistory" autocomplete="off" spellcheck="false" placeholder="Вставте apiLogin">
         <datalist id="loginHistory"></datalist>
         <label class="check"><input type="checkbox" id="includeDisabled" checked> Включати вимкнені організації</label>
+        <label class="check"><input type="checkbox" id="returnAdditionalInfo" checked> Додаткова інформація (returnAdditionalInfo)</label>
         <button type="submit" class="primary" id="loadOrgsBtn">Отримати організації</button>
       </form>
       <div id="loginError" class="error hidden"></div>
@@ -378,7 +379,11 @@
     $('orgsHead').classList.add('hidden');
 
     try {
-      const raw = await api('/api/organizations', { apiLogin, includeDisabled: $('includeDisabled').checked });
+      const raw = await api('/api/organizations', {
+        apiLogin,
+        includeDisabled: $('includeDisabled').checked,
+        returnAdditionalInfo: $('returnAdditionalInfo').checked,
+      });
       const data = JSON.parse(raw);
       state.apiLogin = apiLogin;
       state.orgsRaw = raw;
