@@ -2,6 +2,7 @@
 // Проксіює запити до Syrve API, щоб обійти CORS і не світити токени у браузері.
 
 const http = require('http');
+const https = require('https');
 const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
@@ -30,35 +31,77 @@ class SyrveError extends Error {
   }
 }
 
+// POST через http(s).request, а не fetch: fetch у Node сам додає заголовки
+// (accept-language: *, sec-fetch-mode, user-agent: node), а частина ендпоінтів Syrve
+// (/api/2/menu/by_id) на такий запит відповідає 500. Шлемо мінімум заголовків, як Postman.
+function rawPost(url, headers, payload) {
+  return new Promise((resolve, reject) => {
+    const u = new URL(url);
+    const lib = u.protocol === 'http:' ? http : https;
+    const req = lib.request(u, { method: 'POST', headers }, (res) => {
+      const enc = String(res.headers['content-encoding'] || '').toLowerCase();
+      const stream = enc === 'gzip' ? res.pipe(zlib.createGunzip())
+        : enc === 'deflate' ? res.pipe(zlib.createInflate())
+        : enc === 'br' ? res.pipe(zlib.createBrotliDecompress())
+        : res;
+      const chunks = [];
+      stream.on('data', (c) => chunks.push(c));
+      stream.on('end', () => resolve({ status: res.statusCode, text: Buffer.concat(chunks).toString('utf8') }));
+      stream.on('error', reject);
+    });
+    req.setTimeout(REQUEST_TIMEOUT_MS, () => {
+      const e = new Error('timeout');
+      e.name = 'TimeoutError';
+      req.destroy(e);
+    });
+    req.on('error', reject);
+    req.end(payload);
+  });
+}
+
+// Короткий опис помилки з HTML-сторінки (Syrve інколи віддає HTML замість JSON)
+function htmlErrorSummary(text) {
+  const pick = (re) => (text.match(re) || [])[1];
+  const raw = pick(/<h2[^>]*>([\s\S]*?)<\/h2>/i) || pick(/<title[^>]*>([\s\S]*?)<\/title>/i);
+  return raw ? raw.replace(/<[^>]+>/g, '').replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim() : null;
+}
+
 async function syrvePost(endpoint, body, token, base = SYRVE_API) {
   // body === undefined → запит без тіла (як /api/2/menu у Postman)
-  const headers = body === undefined ? {} : { 'Content-Type': 'application/json' };
+  const payload = body === undefined ? '' : JSON.stringify(body);
+  const headers = {
+    Accept: '*/*',
+    'Accept-Encoding': 'gzip, deflate, br',
+    'User-Agent': 'syrve-viewer/1.0',
+    'Content-Length': Buffer.byteLength(payload),
+  };
+  if (body !== undefined) headers['Content-Type'] = 'application/json';
   if (token) headers.Authorization = `Bearer ${token}`;
 
   let res;
   try {
-    res = await fetch(base + endpoint, {
-      method: 'POST',
-      headers,
-      body: body === undefined ? undefined : JSON.stringify(body),
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-    });
+    res = await rawPost(base + endpoint, headers, payload);
   } catch (err) {
     const timedOut = err.name === 'TimeoutError';
     throw new SyrveError(504, timedOut ? 'Syrve не відповів вчасно' : `Не вдалося з'єднатися з Syrve: ${err.message}`);
   }
 
-  const text = await res.text();
-  if (!res.ok) {
-    let message = `Syrve повернув помилку ${res.status}`;
+  const { status, text } = res;
+  if (status < 200 || status >= 300) {
+    let message = `Syrve повернув помилку ${status}`;
     let correlationId;
     try {
       const j = JSON.parse(text);
       if (j.errorDescription) message = j.errorDescription;
       else if (j.error) message = j.error;
+      else if (j.message) message = j.message;
       correlationId = j.correlationId;
-    } catch { /* тіло не JSON */ }
-    throw new SyrveError(res.status, message, text.slice(0, 2000), correlationId);
+    } catch {
+      const summary = htmlErrorSummary(text);
+      if (summary) message = `Syrve повернув помилку ${status}: ${summary}`;
+    }
+    console.error(`Syrve ${status} on ${endpoint}: ${message}`);
+    throw new SyrveError(status, message, text.slice(0, 2000), correlationId);
   }
   return text;
 }
