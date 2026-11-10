@@ -90,6 +90,12 @@
   .seg button + button { border-left: 1px solid var(--border); }
   .seg button.active { background: var(--accent); color: #fff; }
   .v2-fields label.field { margin-top: 8px; }
+  #sourcesBox { padding: 10px 12px; }
+  .sources { margin-top: 6px; display: flex; flex-direction: column; gap: 2px; max-height: 30vh; overflow: auto; }
+  .sources .org { padding: 6px 10px; }
+  .sources .org .id { font-size: 11px; }
+  #priceCatWrap { margin-top: 8px; }
+  #menusError { margin-top: 8px; }
   input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
   .row { display: flex; gap: 8px; align-items: center; }
   .check { display: flex; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); margin: 10px 0; }
@@ -243,6 +249,18 @@
       <div id="loginError" class="error hidden"></div>
       <div id="loginOk" class="ok hidden"></div>
     </div>
+    <div class="panel-head hidden" id="sourcesBox">
+      <div class="orgs-head">
+        <h2>Що показати</h2>
+        <button class="small" id="menusJsonBtn" title="Показати сиру відповідь /api/2/menu" disabled>JSON</button>
+      </div>
+      <div class="sources" id="sources"></div>
+      <div id="priceCatWrap" class="hidden">
+        <label class="field" for="priceCat">Цінова категорія</label>
+        <select id="priceCat"><option value="">Без цінової категорії</option></select>
+      </div>
+      <div id="menusError" class="error hidden"></div>
+    </div>
     <div class="panel-head orgs-head hidden" id="orgsHead">
       <h2 id="orgsTitle">Організації</h2>
       <button class="small" id="orgsJsonBtn" title="Показати сиру відповідь /organizations">JSON</button>
@@ -285,7 +303,8 @@
   const MODE_KEY = 'syrve-viewer:authMode';
   const APP_KEY = 'syrve-viewer:v2app'; // appId + clientSecret — лише у цьому браузері
   const APP_SOURCE_KEY = 'syrve-viewer:v2appSource'; // 'server' | 'manual'
-  const SHOW_V2 = false; // перемикач V1/V2 поки прихований — працює лише V1
+  const SHOW_V2 = true; // перемикач V1 (apiLogin) / V2 (apiKey + застосунок)
+  const MENU_VERSION = 3; // version для /api/2/menu/by_id
 
   const state = {
     mode: 'v1',
@@ -293,6 +312,10 @@
     orgs: [],
     orgsRaw: null,
     activeOrgId: null,
+    activeOrg: null,
+    source: { type: 'nomenclature' }, // або { type: 'menu', id, name }
+    menus: [],
+    menusRaw: null,
     data: null,
     raw: null,
     fileName: 'data.json',
@@ -460,6 +483,7 @@
     btn.innerHTML = '<span class="spinner"></span>Завантаження…';
     $('orgs').innerHTML = '<div class="loading"><span class="spinner"></span>Отримую організації…</div>';
     $('orgsHead').classList.add('hidden');
+    $('sourcesBox').classList.add('hidden');
 
     const v2 = state.mode === 'v2';
     const manualApp = $('appSource').value === 'manual';
@@ -481,9 +505,13 @@
       state.orgs = (data.organizations || []).slice().sort((a, b) => (a.name || '').localeCompare(b.name || '', 'uk'));
       saveHistory(apiLogin);
       if (v2 && manualApp) saveApp(appId, clientSecret);
+      state.activeOrg = null;
+      state.activeOrgId = null;
+      state.source = { type: 'nomenclature' };
       renderOrgs();
       okBox.textContent = `✓ ${v2 ? 'Токен v2 отримано' : 'apiLogin активний'} · організацій: ${state.orgs.length}`;
       okBox.classList.remove('hidden');
+      loadMenus();
     } catch (err) {
       renderError(errBox, err);
       $('orgs').innerHTML = '<div class="placeholder">Не вдалося отримати організації</div>';
@@ -513,7 +541,7 @@
       copy.addEventListener('click', (e) => { e.stopPropagation(); copyText(org.id, 'id скопійовано'); });
       idLine.appendChild(copy);
       item.appendChild(idLine);
-      item.addEventListener('click', () => loadNomenclature(org));
+      item.addEventListener('click', () => { state.activeOrg = org; loadSelected(); });
       box.appendChild(item);
     }
   }
@@ -529,22 +557,100 @@
     for (const item of $('orgs').querySelectorAll('.org')) item.classList.toggle('active', item.dataset.id === id);
   }
 
-  // ---------- номенклатура ----------
-  async function loadNomenclature(org) {
+  // ---------- зовнішні меню (/api/2/menu) ----------
+  async function loadMenus() {
+    state.menus = [];
+    state.menusRaw = null;
+    $('menusJsonBtn').disabled = true;
+    $('menusError').classList.add('hidden');
+    $('priceCatWrap').classList.add('hidden');
+    $('sourcesBox').classList.remove('hidden');
+    renderSources(true);
+    const auth = state.auth;
+    try {
+      const raw = await api('/api/menus', { ...auth });
+      if (auth !== state.auth) return; // за цей час увійшли з іншим ключем
+      const data = JSON.parse(raw);
+      state.menusRaw = raw;
+      state.menus = data.externalMenus || [];
+      $('menusJsonBtn').disabled = false;
+      const cats = data.priceCategories || [];
+      const sel = $('priceCat');
+      sel.innerHTML = '<option value="">Без цінової категорії</option>';
+      for (const c of cats) { const o = el('option', '', c.name || c.id); o.value = c.id; sel.appendChild(o); }
+      $('priceCatWrap').classList.toggle('hidden', !cats.length);
+    } catch (err) {
+      if (auth !== state.auth) return;
+      renderError($('menusError'), err);
+    }
+    renderSources(false);
+  }
+
+  function renderSources(loading) {
+    const box = $('sources');
+    box.innerHTML = '';
+    const add = (source, title, sub) => {
+      const item = el('div', 'org');
+      const active = state.source.type === source.type && state.source.id === source.id;
+      item.classList.toggle('active', active);
+      item.appendChild(el('div', 'name', title));
+      if (sub) item.appendChild(el('div', 'id', sub));
+      item.addEventListener('click', () => { state.source = source; renderSources(false); loadSelected(); });
+      box.appendChild(item);
+    };
+    add({ type: 'nomenclature' }, 'Номенклатура', '/api/1/nomenclature');
+    if (loading) {
+      box.appendChild(el('div', 'muted', 'Завантажую зовнішні меню…'));
+      return;
+    }
+    for (const m of state.menus) add({ type: 'menu', id: String(m.id), name: m.name }, m.name || '(без назви)', `зовнішнє меню · id ${m.id}`);
+    if (!state.menus.length && $('menusError').classList.contains('hidden')) {
+      box.appendChild(el('div', 'muted', 'Зовнішніх меню немає'));
+    }
+  }
+
+  $('menusJsonBtn').addEventListener('click', () => {
+    if (!state.menusRaw) return;
+    state.requestSeq++;
+    setActiveOrg(null);
+    showJson(state.menusRaw, 'Зовнішні меню (сира відповідь)', 'menus.json');
+  });
+  $('priceCat').addEventListener('change', () => { if (state.source.type === 'menu') loadSelected(); });
+
+  // ---------- завантаження обраного: організація + джерело ----------
+  async function loadSelected() {
+    const org = state.activeOrg;
+    const src = state.source;
     const seq = ++state.requestSeq;
+    if (!org) {
+      setActiveOrg(null);
+      setViewerEnabled(false);
+      $('viewerTitle').textContent = src.type === 'menu' ? `${src.name} — оберіть організацію` : 'Оберіть організацію';
+      $('viewerTitle').classList.add('muted');
+      $('chips').innerHTML = '';
+      $('results').classList.add('hidden');
+      $('tree').innerHTML = '';
+      return;
+    }
+    const isMenu = src.type === 'menu';
+    const orgName = org.name || org.id;
+    const title = isMenu ? `${orgName} · ${src.name}` : orgName;
     setActiveOrg(org.id);
     setViewerEnabled(false);
-    $('viewerTitle').textContent = org.name || org.id;
+    $('viewerTitle').textContent = title;
     $('viewerTitle').classList.remove('muted');
     $('chips').innerHTML = '';
     $('results').classList.add('hidden');
-    $('tree').innerHTML = '<div class="loading"><span class="spinner"></span>Отримую номенклатуру… для великих закладів це може зайняти до хвилини</div>';
+    $('tree').innerHTML = `<div class="loading"><span class="spinner"></span>${isMenu ? 'Отримую меню…' : 'Отримую номенклатуру…'} для великих закладів це може зайняти до хвилини</div>`;
 
     try {
-      const raw = await api('/api/nomenclature', { ...state.auth, organizationId: org.id, startRevision: 0 });
-      if (seq !== state.requestSeq) return; // користувач вже обрав іншу організацію
-      const safeName = (org.name || org.id).replace(/[\\/:*?"<>|]+/g, '_');
-      showJson(raw, org.name || org.id, `nomenclature_${safeName}.json`);
+      const raw = isMenu
+        ? await api('/api/menu', { ...state.auth, externalMenuId: src.id, organizationId: org.id, version: MENU_VERSION, priceCategoryId: $('priceCat').value || undefined })
+        : await api('/api/nomenclature', { ...state.auth, organizationId: org.id, startRevision: 0 });
+      if (seq !== state.requestSeq) return; // користувач вже обрав інше
+      const safe = (s) => String(s).replace(/[\\/:*?"<>|]+/g, '_');
+      const fileName = isMenu ? `menu_${safe(src.name || src.id)}_${safe(orgName)}.json` : `nomenclature_${safe(orgName)}.json`;
+      showJson(raw, title, fileName);
     } catch (err) {
       if (seq !== state.requestSeq) return;
       $('tree').innerHTML = '';

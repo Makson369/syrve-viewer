@@ -10,6 +10,8 @@ const PORT = process.env.PORT || 3000;
 const SYRVE_API = (process.env.SYRVE_API || 'https://api-eu.syrve.live/api/1').replace(/\/+$/, '');
 // Токен v2 (/api/v2/access_token): apiKey + appId + clientSecret застосунку з Syrve Developer Portal
 const SYRVE_API_V2 = SYRVE_API.replace(/\/api\/1$/, '/api/v2');
+// Зовнішні меню: /api/2/menu і /api/2/menu/by_id
+const SYRVE_API_2 = SYRVE_API.replace(/\/api\/1$/, '/api/2');
 const TOKEN_TTL_MS = 50 * 60 * 1000; // токен Syrve живе ~60 хв, оновлюємо раніше
 const REQUEST_TIMEOUT_MS = 180 * 1000;
 const MAX_BODY_BYTES = 64 * 1024;
@@ -29,7 +31,8 @@ class SyrveError extends Error {
 }
 
 async function syrvePost(endpoint, body, token, base = SYRVE_API) {
-  const headers = { 'Content-Type': 'application/json' };
+  // body === undefined → запит без тіла (як /api/2/menu у Postman)
+  const headers = body === undefined ? {} : { 'Content-Type': 'application/json' };
   if (token) headers.Authorization = `Bearer ${token}`;
 
   let res;
@@ -37,7 +40,7 @@ async function syrvePost(endpoint, body, token, base = SYRVE_API) {
     res = await fetch(base + endpoint, {
       method: 'POST',
       headers,
-      body: JSON.stringify(body),
+      body: body === undefined ? undefined : JSON.stringify(body),
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
   } catch (err) {
@@ -176,6 +179,25 @@ const routes = {
     const startRevision = Number.isFinite(body.startRevision) ? body.startRevision : 0;
     return withToken(auth, (token) =>
       syrvePost('/nomenclature', { organizationId, startRevision }, token));
+  },
+
+  // Список зовнішніх меню (externalMenus) і цінових категорій акаунта
+  'POST /api/menus': async (body) => {
+    const auth = readAuth(body);
+    return withToken(auth, (token) => syrvePost('/menu', undefined, token, SYRVE_API_2));
+  },
+
+  // Вміст зовнішнього меню для організації
+  'POST /api/menu': async (body) => {
+    const auth = readAuth(body);
+    const externalMenuId = requireString(String(body.externalMenuId ?? ''), 'externalMenuId');
+    const organizationId = requireString(body.organizationId, 'organizationId');
+    const version = Number.isInteger(body.version) ? body.version : 3;
+    const payload = { externalMenuId, organizationIds: [organizationId], version };
+    if (typeof body.priceCategoryId === 'string' && body.priceCategoryId.trim()) {
+      payload.priceCategoryId = body.priceCategoryId.trim();
+    }
+    return withToken(auth, (token) => syrvePost('/menu/by_id', payload, token, SYRVE_API_2));
   },
 };
 
