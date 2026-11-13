@@ -19,6 +19,7 @@ const MAX_BODY_BYTES = 64 * 1024;
 
 const INDEX_HTML = path.join(__dirname, 'public', 'index.html');
 const ABOUT_HTML = path.join(__dirname, 'public', 'about.html');
+const OG_IMAGE = path.join(__dirname, 'public', 'og.png'); // картинка прев'ю посилання
 
 // ключ авторизації (див. cacheKey) -> { token, exp }
 const tokenCache = new Map();
@@ -251,6 +252,11 @@ const server = http.createServer(async (req, res) => {
   try {
     if (req.method === 'GET' && (url.pathname === '/' || url.pathname === '/index.html')) {
       return send(req, res, 200, fs.readFileSync(INDEX_HTML), 'text/html; charset=utf-8');
+    }
+    if ((req.method === 'GET' || req.method === 'HEAD') && url.pathname === '/og.png') {
+      const img = fs.readFileSync(OG_IMAGE);
+      res.writeHead(200, { 'Content-Type': 'image/png', 'Content-Length': img.length, 'Cache-Control': 'public, max-age=86400' });
+      return res.end(req.method === 'HEAD' ? undefined : img);
     }
     if (req.method === 'GET' && (url.pathname === '/about' || url.pathname === '/about/' || url.pathname === '/about.html')) {
       return send(req, res, 200, fs.readFileSync(ABOUT_HTML), 'text/html; charset=utf-8');
