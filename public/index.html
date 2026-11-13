@@ -4,47 +4,33 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Syrve Menu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&display=swap">
 <style>
+  /* Палітра Choice: чорне тло, помаранчевий акцент (як на /about) */
   :root {
-    --bg: #f6f7f9;
-    --panel: #ffffff;
-    --border: #e2e5ea;
-    --text: #1d2330;
-    --muted: #6b7380;
-    --accent: #2f6fed;
-    --accent-weak: #e8f0fe;
-    --danger: #c62828;
-    --danger-weak: #fdecec;
-    --ok: #1b7a3d;
-    --ok-weak: #e6f4ea;
-    --hl: #fff3b0;
-    --j-key: #8a3ab9;
-    --j-str: #0b7a3e;
-    --j-num: #b35c00;
-    --j-bool: #2f6fed;
-    --j-null: #8c8c8c;
+    color-scheme: dark;
+    --bg: #0A0806;
+    --panel: #16110F;
+    --border: rgba(255,255,255,0.10);
+    --text: #FFFFFF;
+    --muted: #A9A19D;
+    --accent: #FF5A2B;
+    --accent-lift: #FF7A4D;
+    --accent-ink: #FF8A63;
+    --accent-weak: rgba(255,90,43,0.13);
+    --danger: #FF7B6B;
+    --danger-weak: rgba(240,80,60,0.13);
+    --ok: #3FD77A;
+    --ok-weak: rgba(63,215,122,0.12);
+    --hl: rgba(242,184,75,0.28);
+    --j-key: #FF8A63;
+    --j-str: #9BD8A8;
+    --j-num: #F2B84B;
+    --j-bool: #7FB2FF;
+    --j-null: #7C736F;
     --mono: ui-monospace, "Cascadia Code", Consolas, "SFMono-Regular", Menlo, monospace;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #14171c;
-      --panel: #1c2027;
-      --border: #2d333d;
-      --text: #e3e6eb;
-      --muted: #8d95a3;
-      --accent: #6b9cff;
-      --accent-weak: #22304a;
-      --danger: #ff7b7b;
-      --danger-weak: #3a2124;
-      --ok: #7fd39b;
-      --ok-weak: #1d3326;
-      --hl: #5a4d12;
-      --j-key: #d19bf0;
-      --j-str: #7fd39b;
-      --j-num: #f0a65c;
-      --j-bool: #7fa8ff;
-      --j-null: #8c8c8c;
-    }
   }
   * { box-sizing: border-box; }
   html, body { height: 100%; }
@@ -52,8 +38,19 @@
     margin: 0;
     background: var(--bg);
     color: var(--text);
-    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font: 14px/1.45 "Archivo", "Segoe UI", system-ui, -apple-system, sans-serif;
   }
+  .panel { border-radius: 18px !important; }
+  input[type=text], input[type=search], input[type=password], select { border-radius: 10px !important; }
+  button { border-radius: 999px !important; }
+  .seg { border-radius: 999px !important; }
+  .seg button { border-radius: 0 !important; }
+  button.primary { font-weight: 600; }
+  button.primary:hover { background: var(--accent-lift); border-color: var(--accent-lift); }
+  .org, .result, .line { border-radius: 10px; }
+  .org.active { background: var(--accent-weak); border-color: rgba(255,90,43,0.45); }
+  .key { color: var(--j-key); }
+  .about-link:hover { color: #fff; }
   .app {
     display: grid;
     grid-template-columns: 340px 1fr;
