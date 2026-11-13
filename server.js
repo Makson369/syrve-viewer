@@ -18,6 +18,7 @@ const REQUEST_TIMEOUT_MS = 180 * 1000;
 const MAX_BODY_BYTES = 64 * 1024;
 
 const INDEX_HTML = path.join(__dirname, 'public', 'index.html');
+const ABOUT_HTML = path.join(__dirname, 'public', 'about.html');
 
 // ключ авторизації (див. cacheKey) -> { token, exp }
 const tokenCache = new Map();
@@ -250,6 +251,9 @@ const server = http.createServer(async (req, res) => {
   try {
     if (req.method === 'GET' && (url.pathname === '/' || url.pathname === '/index.html')) {
       return send(req, res, 200, fs.readFileSync(INDEX_HTML), 'text/html; charset=utf-8');
+    }
+    if (req.method === 'GET' && (url.pathname === '/about' || url.pathname === '/about/' || url.pathname === '/about.html')) {
+      return send(req, res, 200, fs.readFileSync(ABOUT_HTML), 'text/html; charset=utf-8');
     }
     if (req.method === 'GET' && url.pathname === '/health') {
       return sendJson(req, res, 200, { ok: true });

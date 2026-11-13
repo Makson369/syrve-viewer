@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Номенклатура і зовнішні меню Syrve у браузері замість ланцюжка запитів у Postman.">
+<title>Syrve Viewer — про сайт</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  /* Layout: одна колонка 1040px у стилі внутрішніх сторінок Choice — темне тло, помаранчевий акцент, картки 18px; у центрі — макет самого інструмента */
+  :root {
+    color-scheme: dark;
+    --ground: #0A0806;
+    --surface: #16110F;
+    --surface-2: #1D1714;
+    --ink: #FFFFFF;
+    --ink-2: #A9A19D;
+    --ink-3: #7C736F;
+    --rule: rgba(255,255,255,0.075);
+    --rule-2: rgba(255,255,255,0.14);
+    --accent: #FF5A2B;
+    --accent-lift: #FF7A4D;
+    --accent-ink: #FF8A63;
+    --accent-wash: rgba(255,90,43,0.13);
+    --accent-edge: rgba(255,90,43,0.32);
+    --good: #3FD77A;
+    --good-wash: rgba(63,215,122,0.12);
+    --crit: #F0503C;
+    --crit-wash: rgba(240,80,60,0.12);
+    --warn: #F2B84B;
+    --warn-wash: rgba(242,184,75,0.12);
+    --j-key: #FF8A63;
+    --j-str: #9BD8A8;
+    --j-num: #F2B84B;
+    --font-sans: "Archivo", "Segoe UI", system-ui, -apple-system, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.6;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 40px 72px;
+  }
+  body::after {
+    content: ""; position: fixed; inset: 0; pointer-events: none; z-index: -1;
+    background: radial-gradient(900px 500px at 0% 0%, rgba(255,90,43,0.08), transparent 60%);
+  }
+  .wrap { max-width: 1040px; margin-inline: auto; display: flex; flex-direction: column; gap: 72px; }
+
+  h1, h2, h3 { margin: 0; text-wrap: balance; font-weight: 800; letter-spacing: -0.02em; }
+  p { margin: 0; }
+  code, .mono { font-family: var(--font-mono); font-size: 0.92em; }
+  a { color: inherit; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
+
+  /* ---------- hero ---------- */
+  .hero { display: flex; flex-direction: column; gap: 20px; max-width: 760px; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 8px; width: fit-content;
+    padding: 7px 14px; border-radius: 999px; font-size: 12.5px; font-weight: 600;
+    color: var(--accent-ink); background: var(--accent-wash); border: 1px solid var(--accent-edge);
+  }
+  .pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+  h1 { font-size: clamp(32px, 5.4vw, 52px); line-height: 1.05; }
+  h1 span { color: var(--accent); }
+  .lede { font-size: 17px; color: var(--ink-2); max-width: 62ch; }
+  .cta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; padding: 11px 20px; border-radius: 999px;
+    font-weight: 600; font-size: 14px; text-decoration: none; border: 1px solid var(--rule-2);
+    transition: background .15s, border-color .15s;
+  }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.primary:hover { background: var(--accent-lift); border-color: var(--accent-lift); }
+  .btn.ghost { color: var(--ink); background: var(--surface); }
+  .btn.ghost:hover { border-color: var(--accent-edge); }
+  .url { font-family: var(--font-mono); font-size: 12.5px; color: var(--ink-3); word-break: break-all; }
+
+  /* ---------- tool mockup ---------- */
+  .window {
+    border: 1px solid var(--rule-2); border-radius: 18px; overflow: hidden; background: var(--surface);
+    box-shadow: 0 40px 80px -40px rgba(255,90,43,0.25), 0 20px 40px -20px rgba(0,0,0,0.6);
+  }
+  .bar { display: flex; align-items: center; gap: 8px; padding: 11px 14px; border-bottom: 1px solid var(--rule); background: var(--surface-2); }
+  .bar i { width: 9px; height: 9px; border-radius: 50%; background: var(--rule-2); }
+  .bar .addr {
+    flex: 1; min-width: 0; margin-left: 6px; padding: 5px 12px; border-radius: 999px; background: var(--ground);
+    font: 12px/1.3 var(--font-mono); color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .app { display: grid; grid-template-columns: 300px 1fr; min-height: 420px; }
+  .side { border-right: 1px solid var(--rule); padding: 16px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+  .side-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .side-top b { font-size: 14px; }
+  .seg { display: inline-flex; border: 1px solid var(--rule-2); border-radius: 999px; overflow: hidden; font-size: 11.5px; font-weight: 600; }
+  .seg span { padding: 3px 11px; color: var(--ink-3); }
+  .seg span.on { background: var(--accent); color: #fff; }
+  .lbl { font-size: 11px; color: var(--ink-3); margin-bottom: 4px; }
+  .input { border: 1px solid var(--rule-2); border-radius: 10px; padding: 8px 11px; font: 12.5px var(--font-mono); color: var(--ink-2); background: var(--ground); }
+  .run { border-radius: 999px; background: var(--accent); color: #fff; font-weight: 600; font-size: 13px; text-align: center; padding: 8px; }
+  .okline { border-radius: 10px; padding: 7px 11px; font-size: 12px; color: var(--good); background: var(--good-wash); }
+  .group h4 { margin: 0 0 6px; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-3); font-weight: 700; }
+  .item { padding: 7px 10px; border-radius: 10px; border: 1px solid transparent; }
+  .item + .item { margin-top: 2px; }
+  .item b { display: block; font-size: 13px; font-weight: 600; }
+  .item small { display: block; font: 11px var(--font-mono); color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .item.on { background: var(--accent-wash); border-color: var(--accent-edge); }
+
+  .main { padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  .main-top { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .main-top h3 { font-size: 15px; letter-spacing: -0.01em; flex: 1; min-width: 160px; }
+  .tool { font-size: 11.5px; color: var(--ink-2); border: 1px solid var(--rule-2); border-radius: 999px; padding: 3px 10px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { font-size: 11.5px; color: var(--ink-3); border: 1px solid var(--rule); background: var(--surface-2); border-radius: 999px; padding: 2px 10px; font-variant-numeric: tabular-nums; }
+  .chip b { color: var(--ink); font-weight: 600; }
+  .chip.hot { border-color: var(--accent-edge); color: var(--accent-ink); }
+  .chip.hot b { color: var(--accent-ink); }
+  .search { border: 1px solid var(--rule-2); border-radius: 10px; padding: 8px 11px; font-size: 12.5px; color: var(--ink-3); background: var(--ground); }
+  .search b { color: var(--ink); font-weight: 500; }
+  .tree { font: 12.5px/1.75 var(--font-mono); color: var(--ink-2); overflow-x: auto; white-space: nowrap; }
+  .tree .k { color: var(--j-key); }
+  .tree .s { color: var(--j-str); }
+  .tree .n { color: var(--j-num); }
+  .tree .m { color: var(--ink-3); font-style: italic; }
+  .tree .t { display: inline-block; width: 14px; color: var(--ink-3); }
+  .tree .in1 { padding-left: 18px; }
+  .tree .in2 { padding-left: 36px; }
+  .tree .in3 { padding-left: 54px; }
+  .tree .hl { background: rgba(242,184,75,0.16); border-radius: 4px; }
+  .example { font: 600 10.5px/1 var(--font-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); }
+
+  /* ---------- sections ---------- */
+  section { display: flex; flex-direction: column; gap: 22px; }
+  .kicker { font-size: 11.5px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
+  .head { display: flex; flex-direction: column; gap: 8px; }
+  h2 { font-size: clamp(24px, 3.2vw, 30px); line-height: 1.15; }
+  .sub { color: var(--ink-2); max-width: 64ch; }
+
+  /* before / after */
+  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .panel { background: var(--surface); border: 1px solid var(--rule); border-radius: 18px; padding: 22px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+  .panel.after { border-color: var(--accent-edge); background: linear-gradient(180deg, var(--accent-wash), var(--surface) 55%); }
+  .panel h3 { font-size: 17px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .tag { font-size: 11.5px; font-weight: 600; border-radius: 999px; padding: 3px 10px; white-space: nowrap; }
+  .tag.slow { color: var(--ink-2); background: var(--surface-2); border: 1px solid var(--rule-2); }
+  .tag.fast { color: #fff; background: var(--accent); }
+  .reqs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .reqs li { display: grid; grid-template-columns: 46px 1fr; gap: 10px; align-items: start; font-size: 13.5px; color: var(--ink-2); }
+  .verb { font: 600 11px/1.9 var(--font-mono); color: var(--accent-ink); }
+  .reqs code { color: var(--ink); font-size: 12.5px; word-break: break-all; }
+  .reqs .note { display: block; font-size: 12.5px; color: var(--ink-3); }
+  .clicks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+  .clicks li { display: flex; gap: 12px; align-items: flex-start; font-size: 14px; color: var(--ink-2); }
+  .clicks li b { color: var(--ink); }
+  .dot { flex: 0 0 auto; width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: #fff; font: 700 12px/24px var(--font-sans); text-align: center; }
+  .panel .foot { margin-top: auto; padding-top: 12px; border-top: 1px solid var(--rule); font-size: 12.5px; color: var(--ink-3); }
+
+  /* features */
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .card { background: var(--surface); border: 1px solid var(--rule); border-radius: 18px; padding: 20px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .card .ep { font: 500 11.5px var(--font-mono); color: var(--accent-ink); }
+  .card h3 { font-size: 16px; letter-spacing: -0.01em; }
+  .card p { font-size: 14px; color: var(--ink-2); }
+
+  /* errors */
+  .errs { background: var(--surface); border: 1px solid var(--rule); border-radius: 18px; overflow: hidden; }
+  .errs-row { display: grid; grid-template-columns: 74px 1fr 1.2fr; gap: 16px; padding: 14px 20px; align-items: center; border-top: 1px solid var(--rule); font-size: 14px; }
+  .errs-row:first-child { border-top: none; }
+  .errs-row.headrow { font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-3); padding-block: 12px; }
+  .code { font: 600 13px var(--font-mono); border-radius: 999px; padding: 3px 0; text-align: center; font-variant-numeric: tabular-nums; }
+  .code.ok { color: var(--good); background: var(--good-wash); }
+  .code.bad { color: var(--crit); background: var(--crit-wash); }
+  .code.wait { color: var(--warn); background: var(--warn-wash); }
+  .errs-row .what { color: var(--ink); font-weight: 600; }
+  .errs-row .how { color: var(--ink-2); font-size: 13.5px; }
+  .errs-foot { padding: 14px 20px; border-top: 1px solid var(--rule); font-size: 13px; color: var(--ink-3); background: var(--surface-2); }
+
+  /* facts */
+  .facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .fact { border-top: 2px solid var(--accent); padding-top: 14px; display: flex; flex-direction: column; gap: 6px; }
+  .fact b { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .fact span { font-size: 13.5px; color: var(--ink-2); }
+
+  footer { border-top: 1px solid var(--rule); padding-top: 28px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 20px; align-items: flex-end; }
+  footer p { color: var(--ink-2); max-width: 56ch; font-size: 14px; }
+  footer .links { display: flex; flex-wrap: wrap; gap: 10px; }
+
+  @media (max-width: 860px) {
+    .app { grid-template-columns: 1fr; }
+    .side { border-right: none; border-bottom: 1px solid var(--rule); }
+    .compare, .grid, .facts { grid-template-columns: 1fr; }
+  }
+  @media (min-width: 861px) and (max-width: 1000px) {
+    .grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 560px) {
+    .errs-row { grid-template-columns: 64px 1fr; }
+    .errs-row .how { grid-column: 2; }
+    .errs-row.headrow .how { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+<style>section { scroll-margin-top: 24px; } body { margin: 0; }</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header class="hero">
+    <span class="pill">Для команди підтримки</span>
+    <h1>Номенклатура Syrve <span>за три кліки.</span></h1>
+    <p class="lede">Сайт замість ланцюжка запитів у Postman. Вставляєте apiLogin або apiKey, обираєте організацію і бачите номенклатуру чи зовнішнє меню як дерево JSON з пошуком. Токен, id організації і id меню сайт підставляє сам.</p>
+    <div class="cta">
+      <a class="btn primary" href="/">Відкрити сайт →</a>
+      <a class="btn ghost" href="https://github.com/Makson369/syrve-viewer" target="_blank" rel="noopener">README на GitHub</a>
+    </div>
+    <span class="url">syrve-viewer-production.up.railway.app</span>
+  </header>
+
+  <div class="window" aria-label="Як виглядає сайт">
+    <div class="bar"><i></i><i></i><i></i><span class="addr">syrve-viewer-production.up.railway.app</span></div>
+    <div class="app">
+      <div class="side">
+        <div class="side-top"><b>Syrve Номенклатура</b><span class="seg"><span>V1</span><span class="on">V2</span></span></div>
+        <div>
+          <div class="lbl">apiKey</div>
+          <div class="input">26a1••••••••••••••••f05</div>
+        </div>
+        <div class="run">Отримати організації</div>
+        <div class="okline">✓ Токен v2 отримано · організацій: 2</div>
+        <div class="group">
+          <h4>Що показати</h4>
+          <div class="item"><b>Номенклатура</b><small>/api/1/nomenclature</small></div>
+          <div class="item on"><b>Основне меню</b><small>зовнішнє меню · id 12058</small></div>
+        </div>
+        <div class="group">
+          <h4>Організації (2)</h4>
+          <div class="item on"><b>Ресторан Центр</b><small>28e4cf79-77c4-4b23-b592-…</small></div>
+          <div class="item"><b>Кафе на Подолі</b><small>9a255eda-ddd5-4c93-9893-…</small></div>
+        </div>
+      </div>
+      <div class="main">
+        <div class="main-top">
+          <h3>Ресторан Центр · Основне меню</h3>
+          <span class="tool">Копіювати</span><span class="tool">Завантажити</span>
+        </div>
+        <div class="chips">
+          <span class="chip">itemCategories: <b>14</b></span>
+          <span class="chip hot">рядків: <b>48 312</b></span>
+          <span class="chip">розмір: <b>1.27 MB</b></span>
+        </div>
+        <div class="search">Пошук: <b>борщ</b> · знайдено 3</div>
+        <div class="tree">
+          <div><span class="t">▾</span>{ <span class="m">5 полів</span> } <span class="m">— Основне меню</span></div>
+          <div class="in1"><span class="t"></span><span class="k">"id"</span>: <span class="n">12058</span></div>
+          <div class="in1"><span class="t">▾</span><span class="k">"itemCategories"</span>: [ <span class="m">14 елем.</span> ]</div>
+          <div class="in2"><span class="t">▸</span>0: { <span class="m">6 полів</span> } <span class="m">— Холодні закуски</span></div>
+          <div class="in2"><span class="t">▾</span>1: { <span class="m">6 полів</span> } <span class="m">— Перші страви</span></div>
+          <div class="in3"><span class="t">▸</span><span class="k">"items"</span>: [ <span class="m">9 елем.</span> ]</div>
+          <div class="in3 hl"><span class="t"></span><span class="k">"name"</span>: <span class="s">"Борщ український"</span></div>
+          <div class="in2"><span class="t">▸</span>2: { <span class="m">6 полів</span> } <span class="m">— Основні страви</span></div>
+        </div>
+        <span class="example">Приклад · дані вигадані</span>
+      </div>
+    </div>
+  </div>
+
+  <section id="compare">
+    <div class="head">
+      <span class="kicker">Було і стало</span>
+      <h2>Один і той самий результат</h2>
+      <p class="sub">Сайт робить ті самі запити до Syrve, що й Postman, у тому самому порядку. Різниця в тому, хто копіює токен і id між ними.</p>
+    </div>
+    <div class="compare">
+      <div class="panel">
+        <h3>Postman <span class="tag slow">4 запити вручну</span></h3>
+        <ol class="reqs">
+          <li><span class="verb">POST</span><span><code>/api/v2/access_token</code><span class="note">apiKey, appId, clientSecret → копіюєте token</span></span></li>
+          <li><span class="verb">POST</span><span><code>/api/2/menu</code><span class="note">Bearer token → копіюєте id меню</span></span></li>
+          <li><span class="verb">POST</span><span><code>/api/1/organizations</code><span class="note">Bearer token → копіюєте id організації</span></span></li>
+          <li><span class="verb">POST</span><span><code>/api/2/menu/by_id</code><span class="note">вставляєте externalMenuId, organizationIds, version 3</span></span></li>
+        </ol>
+        <p class="foot">Токен живе близько години, потім усе спочатку.</p>
+      </div>
+      <div class="panel after">
+        <h3>Syrve Viewer <span class="tag fast">3 кліки</span></h3>
+        <ol class="clicks">
+          <li><span class="dot">1</span><span>Вставити <b>apiLogin</b> (V1) або <b>apiKey</b> (V2) і натиснути <b>Отримати організації</b>.</span></li>
+          <li><span class="dot">2</span><span>У блоці <b>Що показати</b> обрати номенклатуру або потрібне зовнішнє меню.</span></li>
+          <li><span class="dot">3</span><span>Клікнути на <b>організацію</b>. Дані відкриються праворуч.</span></li>
+        </ol>
+        <p class="foot">Токен сайт отримує і оновлює сам. Організації й меню можна перемикати без повторного входу.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="features">
+    <div class="head">
+      <span class="kicker">Що вміє</span>
+      <h2>Усе, за чим ходили в Postman</h2>
+    </div>
+    <div class="grid">
+      <div class="card">
+        <span class="ep">/api/1 · /api/v2/access_token</span>
+        <h3>Вхід через V1 і V2</h3>
+        <p>V1 приймає apiLogin. Для V2 достатньо apiKey: appId і clientSecret застосунку вже збережені на сервері, за потреби їх можна ввести вручну.</p>
+      </div>
+      <div class="card">
+        <span class="ep">/api/1/nomenclature</span>
+        <h3>Номенклатура</h3>
+        <p>Групи, товари, категорії, розміри і revision, як у відповіді Syrve. Клік на іншу організацію одразу перезавантажує дані.</p>
+      </div>
+      <div class="card">
+        <span class="ep">/api/2/menu/by_id</span>
+        <h3>Зовнішні меню</h3>
+        <p>Список меню підтягується сам. Обираєте меню й організацію, version 3 підставляється автоматично. Цінова категорія з'являється, якщо вона є в акаунті.</p>
+      </div>
+      <div class="card">
+        <span class="ep">пошук</span>
+        <h3>Дерево і пошук</h3>
+        <p>Пошук іде по ключах і значеннях: назва, id, артикул. Біля збігу видно, до якого товару він належить, а клік розгортає дерево до цього місця.</p>
+      </div>
+      <div class="card">
+        <span class="ep">рядків · розмір</span>
+        <h3>Лічильники</h3>
+        <p>Кількість елементів у кожному масиві, рядків як у Postman у режимі Pretty, і розмір відповіді. Зручно звіряти з тим, що бачить клієнт.</p>
+      </div>
+      <div class="card">
+        <span class="ep">копіювати · завантажити</span>
+        <h3>JSON у один клік</h3>
+        <p>Скопіювати всю відповідь або завантажити файлом. Окремі кнопки JSON показують сирі відповіді організацій і списку меню.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="errors">
+    <div class="head">
+      <span class="kicker">Перевірка ключа</span>
+      <h2>Видно, чи ключ живий</h2>
+      <p class="sub">Сайт зручно відкривати, навіть коли потрібно просто перевірити ключ клієнта. Якщо Syrve відмовив, видно код, пояснення українською, оригінальний текст і correlationId для підтримки Syrve.</p>
+    </div>
+    <div class="errs" role="table" aria-label="Відповіді Syrve">
+      <div class="errs-row headrow" role="row"><span role="columnheader">Код</span><span role="columnheader">Що означає</span><span class="how" role="columnheader">Що робити</span></div>
+      <div class="errs-row" role="row"><span class="code ok">200</span><span class="what">Ключ активний</span><span class="how">Зелена плашка з кількістю організацій.</span></div>
+      <div class="errs-row" role="row"><span class="code bad">401</span><span class="what">apiLogin не знайдено або вимкнений</span><span class="how">Перевірити ключ у клієнта. Для V2: apiKey, appId або clientSecret.</span></div>
+      <div class="errs-row" role="row"><span class="code bad">423</span><span class="what">Ліцензія Cloud API закінчилась</span><span class="how">Ключ правильний, але клієнту потрібно продовжити ліцензію в Syrve.</span></div>
+      <div class="errs-row" role="row"><span class="code wait">429</span><span class="what">Забагато запитів</span><span class="how">Почекати хвилину і повторити.</span></div>
+      <div class="errs-row" role="row"><span class="code wait">5xx</span><span class="what">Syrve тимчасово недоступний</span><span class="how">Повторити пізніше. Якщо не минає, передати correlationId у Syrve.</span></div>
+      <div class="errs-foot">Біля кожної помилки є кнопка, щоб скопіювати correlationId.</div>
+    </div>
+  </section>
+
+  <section id="facts">
+    <div class="head">
+      <span class="kicker">Корисно знати</span>
+      <h2>Коротко про надійність</h2>
+    </div>
+    <div class="facts">
+      <div class="fact"><b>1,2 млн рядків</b><span>Перевірено на відповіді 18 МБ: відкривається за долі секунди, дерево малюється порціями.</span></div>
+      <div class="fact"><b>Ключі не зберігаються</b><span>apiLogin і apiKey не записуються на сервері. Браузер пам'ятає лише ваші останні 10 для підказки.</span></div>
+      <div class="fact"><b>Працює 24/7</b><span>Сайт крутиться на Railway і не залежить від нічийого ноутбука. Оновлення приходять автоматично з GitHub.</span></div>
+    </div>
+  </section>
+
+  <footer>
+    <p>Бачите, що чогось не вистачає, або дані не збігаються з Postman? Напишіть, що саме відкривали, і це допрацюємо. Можу показати наживо в Discord.</p>
+    <div class="links">
+      <a class="btn primary" href="/">Відкрити сайт →</a>
+      <a class="btn ghost" href="https://github.com/Makson369/syrve-viewer" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </footer>
+
+</div>
+
+</body>
+</html>

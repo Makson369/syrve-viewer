@@ -85,6 +85,8 @@
   input[type=text], input[type=password] { font-family: var(--mono); }
   .title-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 12px; }
   .title-row h1 { margin: 0; }
+  .about-link { display: inline-block; margin: -6px 0 12px; font-size: 12px; color: var(--muted); text-decoration: none; }
+  .about-link:hover { color: var(--accent); text-decoration: underline; }
   .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 7px; overflow: hidden; }
   .seg button { border: none; border-radius: 0; padding: 3px 10px; font-size: 12px; color: var(--muted); }
   .seg button + button { border-left: 1px solid var(--border); }
@@ -226,6 +228,7 @@
           <button type="button" data-mode="v2" title="/api/v2/access_token з apiKey + appId + clientSecret">V2</button>
         </div>
       </div>
+      <a class="about-link" href="/about">Що це і як користуватися →</a>
       <form id="loginForm">
         <label class="field" for="apiLogin" id="apiLoginLabel">apiLogin</label>
         <input type="text" id="apiLogin" list="loginHistory" autocomplete="off" spellcheck="false" placeholder="Вставте apiLogin">
