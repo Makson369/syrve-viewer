@@ -95,6 +95,7 @@
   .title-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 12px; }
   .title-row h1 { margin: 0; }
   .sub-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: -4px 0 14px; }
+  .side-foot { display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-top: 1px solid var(--border); font-size: 12px; }
   .about-link {
     display: inline-flex; align-items: center; gap: 6px; margin: 0;
     padding: 5px 12px; border-radius: 999px; border: 1px solid var(--accent);
@@ -245,10 +246,6 @@
       </div>
       <div class="sub-row">
         <a class="about-link" href="/about" data-i18n="about">Що це і як користуватися →</a>
-        <div class="seg" id="langSeg" role="group" aria-label="Мова інтерфейсу" data-i18n-aria="langSeg">
-          <button type="button" data-lang="uk" title="Українська">UA</button>
-          <button type="button" data-lang="en" title="English">EN</button>
-        </div>
       </div>
       <form id="loginForm">
         <label class="field" for="apiLogin" id="apiLoginLabel">apiLogin</label>
@@ -291,6 +288,13 @@
     </div>
     <div class="orgs" id="orgs">
       <div class="placeholder" data-i18n="orgsPlaceholder">Введіть apiLogin, щоб побачити організації</div>
+    </div>
+    <div class="side-foot">
+      <span class="muted" data-i18n="langLabel">Мова</span>
+      <div class="seg" id="langSeg" role="group" aria-label="Мова інтерфейсу" data-i18n-aria="langSeg">
+        <button type="button" data-lang="uk" title="Українська">UA</button>
+        <button type="button" data-lang="en" title="English">EN</button>
+      </div>
     </div>
   </section>
 
@@ -354,7 +358,7 @@
   const LANG_KEY = 'syrve-viewer:lang';
   const I18N = {
     uk: {
-      about: 'Що це і як користуватися →', authSeg: 'Метод отримання токена', langSeg: 'Мова інтерфейсу',
+      langLabel: 'Мова', about: 'Що це і як користуватися →', authSeg: 'Метод отримання токена', langSeg: 'Мова інтерфейсу',
       v1Title: '/api/1/access_token з apiLogin', v2Title: '/api/v2/access_token з apiKey + appId + clientSecret',
       phLogin: 'Вставте apiLogin', phKey: 'Вставте apiKey',
       app: 'Застосунок', appManual: 'Ввести вручну', appIdPh: 'ID застосунку з Developer Portal', secretPh: 'Секрет застосунку',
@@ -385,7 +389,7 @@
       },
     },
     en: {
-      about: 'What is this and how to use it →', authSeg: 'Token method', langSeg: 'Interface language',
+      langLabel: 'Language', about: 'What is this and how to use it →', authSeg: 'Token method', langSeg: 'Interface language',
       v1Title: '/api/1/access_token with apiLogin', v2Title: '/api/v2/access_token with apiKey + appId + clientSecret',
       phLogin: 'Paste apiLogin', phKey: 'Paste apiKey',
       app: 'Application', appManual: 'Enter manually', appIdPh: 'Application ID from Developer Portal', secretPh: 'Application secret',
