@@ -94,8 +94,9 @@
   input[type=text], input[type=password] { font-family: var(--mono); }
   .title-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 12px; }
   .title-row h1 { margin: 0; }
+  .sub-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: -4px 0 14px; }
   .about-link {
-    display: inline-flex; align-items: center; gap: 6px; margin: -4px 0 14px;
+    display: inline-flex; align-items: center; gap: 6px; margin: 0;
     padding: 5px 12px; border-radius: 999px; border: 1px solid var(--accent);
     background: var(--accent-weak); color: var(--accent);
     font-size: 13.5px; font-weight: 600; text-decoration: none;
@@ -237,53 +238,59 @@
     <div class="panel-head">
       <div class="title-row">
         <h1>Syrve Menu</h1>
-        <div class="seg hidden" id="authSeg" role="group" aria-label="Метод отримання токена">
-          <button type="button" data-mode="v1" title="/api/1/access_token з apiLogin">V1</button>
-          <button type="button" data-mode="v2" title="/api/v2/access_token з apiKey + appId + clientSecret">V2</button>
+        <div class="seg hidden" id="authSeg" role="group" aria-label="Метод отримання токена" data-i18n-aria="authSeg">
+          <button type="button" data-mode="v1" title="/api/1/access_token з apiLogin" data-i18n-title="v1Title">V1</button>
+          <button type="button" data-mode="v2" title="/api/v2/access_token з apiKey + appId + clientSecret" data-i18n-title="v2Title">V2</button>
         </div>
       </div>
-      <a class="about-link" href="/about">Що це і як користуватися →</a>
+      <div class="sub-row">
+        <a class="about-link" href="/about" data-i18n="about">Що це і як користуватися →</a>
+        <div class="seg" id="langSeg" role="group" aria-label="Мова інтерфейсу" data-i18n-aria="langSeg">
+          <button type="button" data-lang="uk" title="Українська">UA</button>
+          <button type="button" data-lang="en" title="English">EN</button>
+        </div>
+      </div>
       <form id="loginForm">
         <label class="field" for="apiLogin" id="apiLoginLabel">apiLogin</label>
         <input type="text" id="apiLogin" list="loginHistory" autocomplete="off" spellcheck="false" placeholder="Вставте apiLogin">
         <datalist id="loginHistory"></datalist>
         <div class="v2-fields hidden" id="v2Fields">
-          <label class="field" for="appSource">Застосунок</label>
+          <label class="field" for="appSource" data-i18n="app">Застосунок</label>
           <select id="appSource">
-            <option value="manual">Ввести вручну</option>
+            <option value="manual" data-i18n="appManual">Ввести вручну</option>
           </select>
           <div id="manualApp">
             <label class="field" for="appId">appId</label>
-            <input type="text" id="appId" autocomplete="off" spellcheck="false" placeholder="ID застосунку з Developer Portal">
+            <input type="text" id="appId" autocomplete="off" spellcheck="false" placeholder="ID застосунку з Developer Portal" data-i18n-ph="appIdPh">
             <label class="field" for="clientSecret">clientSecret</label>
-            <input type="password" id="clientSecret" autocomplete="off" spellcheck="false" placeholder="Секрет застосунку">
+            <input type="password" id="clientSecret" autocomplete="off" spellcheck="false" placeholder="Секрет застосунку" data-i18n-ph="secretPh">
           </div>
         </div>
-        <label class="check"><input type="checkbox" id="includeDisabled" checked> Включати вимкнені організації</label>
-        <label class="check"><input type="checkbox" id="returnAdditionalInfo" checked> Додаткова інформація (returnAdditionalInfo)</label>
-        <button type="submit" class="primary" id="loadOrgsBtn">Отримати організації</button>
+        <label class="check"><input type="checkbox" id="includeDisabled" checked> <span data-i18n="includeDisabled">Включати вимкнені організації</span></label>
+        <label class="check"><input type="checkbox" id="returnAdditionalInfo" checked> <span data-i18n="additionalInfo">Додаткова інформація (returnAdditionalInfo)</span></label>
+        <button type="submit" class="primary" id="loadOrgsBtn" data-i18n="loadOrgs">Отримати організації</button>
       </form>
       <div id="loginError" class="error hidden"></div>
       <div id="loginOk" class="ok hidden"></div>
     </div>
     <div class="panel-head hidden" id="sourcesBox">
       <div class="orgs-head">
-        <h2>Що показати</h2>
-        <button class="small" id="menusJsonBtn" title="Показати сиру відповідь /api/2/menu" disabled>JSON</button>
+        <h2 data-i18n="whatToShow">Що показати</h2>
+        <button class="small" id="menusJsonBtn" title="Показати сиру відповідь /api/2/menu" data-i18n-title="menusJsonTitle" disabled>JSON</button>
       </div>
       <div class="sources" id="sources"></div>
       <div id="priceCatWrap" class="hidden">
-        <label class="field" for="priceCat">Цінова категорія</label>
-        <select id="priceCat"><option value="">Без цінової категорії</option></select>
+        <label class="field" for="priceCat" data-i18n="priceCat">Цінова категорія</label>
+        <select id="priceCat"><option value="" data-i18n="noPriceCat">Без цінової категорії</option></select>
       </div>
       <div id="menusError" class="error hidden"></div>
     </div>
     <div class="panel-head orgs-head hidden" id="orgsHead">
       <h2 id="orgsTitle">Організації</h2>
-      <button class="small" id="orgsJsonBtn" title="Показати сиру відповідь /organizations">JSON</button>
+      <button class="small" id="orgsJsonBtn" title="Показати сиру відповідь /organizations" data-i18n-title="orgsJsonTitle">JSON</button>
     </div>
     <div class="orgs" id="orgs">
-      <div class="placeholder">Введіть apiLogin, щоб побачити організації</div>
+      <div class="placeholder" data-i18n="orgsPlaceholder">Введіть apiLogin, щоб побачити організації</div>
     </div>
   </section>
 
@@ -292,14 +299,14 @@
     <div class="panel-head">
       <div class="viewer-head">
         <h2 id="viewerTitle" class="muted">Оберіть організацію</h2>
-        <button class="small" id="collapseBtn" disabled>Згорнути все</button>
-        <button class="small" id="expandBtn" disabled>Розгорнути 2 рівні</button>
-        <button class="small" id="copyBtn" disabled>Копіювати</button>
-        <button class="small" id="downloadBtn" disabled>Завантажити</button>
+        <button class="small" id="collapseBtn" data-i18n="collapse" disabled>Згорнути все</button>
+        <button class="small" id="expandBtn" data-i18n="expand2" disabled>Розгорнути 2 рівні</button>
+        <button class="small" id="copyBtn" data-i18n="copy" disabled>Копіювати</button>
+        <button class="small" id="downloadBtn" data-i18n="download" disabled>Завантажити</button>
       </div>
       <div class="chips" id="chips"></div>
       <div class="searchbar">
-        <input type="search" id="search" placeholder="Пошук по ключах і значеннях (назва, id, артикул…)" disabled>
+        <input type="search" id="search" placeholder="Пошук по ключах і значеннях (назва, id, артикул…)" data-i18n-ph="searchPh" disabled>
       </div>
     </div>
     <div class="viewer-body">
@@ -338,7 +345,118 @@
     fileName: 'data.json',
     root: null,
     requestSeq: 0,
+    lang: 'uk',
+    titleFn: null, // () => заголовок правої панелі (перекладається при зміні мови)
+    okFn: null,    // () => текст зеленої плашки
   };
+
+  // ---------- переклад інтерфейсу (UA за замовчуванням / EN) ----------
+  const LANG_KEY = 'syrve-viewer:lang';
+  const I18N = {
+    uk: {
+      about: 'Що це і як користуватися →', authSeg: 'Метод отримання токена', langSeg: 'Мова інтерфейсу',
+      v1Title: '/api/1/access_token з apiLogin', v2Title: '/api/v2/access_token з apiKey + appId + clientSecret',
+      phLogin: 'Вставте apiLogin', phKey: 'Вставте apiKey',
+      app: 'Застосунок', appManual: 'Ввести вручну', appIdPh: 'ID застосунку з Developer Portal', secretPh: 'Секрет застосунку',
+      includeDisabled: 'Включати вимкнені організації', additionalInfo: 'Додаткова інформація (returnAdditionalInfo)',
+      loadOrgs: 'Отримати організації', loading: 'Завантаження…', gettingOrgs: 'Отримую організації…',
+      whatToShow: 'Що показати', menusJsonTitle: 'Показати сиру відповідь /api/2/menu',
+      priceCat: 'Цінова категорія', noPriceCat: 'Без цінової категорії',
+      orgsJsonTitle: 'Показати сиру відповідь /organizations', orgsPlaceholder: 'Введіть apiLogin, щоб побачити організації',
+      pickOrg: 'Оберіть організацію', menuPickOrg: '{name} — оберіть організацію',
+      collapse: 'Згорнути все', expand2: 'Розгорнути 2 рівні', copy: 'Копіювати', download: 'Завантажити',
+      searchPh: 'Пошук по ключах і значеннях (назва, id, артикул…)',
+      copied: 'Скопійовано', copyFail: 'Не вдалося скопіювати', errorN: 'Помилка {n}', error: 'Помилка',
+      copyLower: 'копіювати', cidCopied: 'correlationId скопійовано',
+      okV2: 'Токен v2 отримано', okV1: 'apiLogin активний', orgCount: 'організацій: {n}',
+      orgsFail: 'Не вдалося отримати організації', orgsTitle: 'Організації ({n})', noOrgs: 'Організацій не знайдено',
+      noName: '(без назви)', copyId: 'Копіювати id', idCopied: 'id скопійовано', orgsRaw: 'Організації (сира відповідь)',
+      nomenclature: 'Номенклатура', loadingMenus: 'Завантажую зовнішні меню…', extMenu: 'зовнішнє меню · id {id}',
+      noMenus: 'Зовнішніх меню немає', menusRaw: 'Зовнішні меню (сира відповідь)',
+      gettingMenu: 'Отримую меню…', gettingNom: 'Отримую номенклатуру…', mayTake: 'для великих закладів це може зайняти до хвилини',
+      notJson: 'Відповідь не є коректним JSON', lines: 'рядків', size: 'розмір',
+      items: '{n} елем.', fields: '{n} полів', showMore: 'Показати ще {a} (залишилось {b})', jsonCopied: 'JSON скопійовано',
+      root: '(корінь)', notFound: 'Нічого не знайдено', foundSome: 'Знайдено {t}, показано перші {n}', found: 'Знайдено {t}',
+      hints: {
+        400: 'Некоректний запит', 401: 'apiLogin не знайдено або він вимкнений', '401v2': 'Невірний apiKey, appId або clientSecret',
+        403: 'Немає доступу до цих даних', 404: 'Не знайдено', 408: 'Syrve не відповів вчасно',
+        423: 'Ліцензія Cloud API для цього apiLogin закінчилась', 429: 'Забагато запитів — спробуйте трохи пізніше',
+        500: 'Внутрішня помилка Syrve', 502: 'Syrve тимчасово недоступний', 503: 'Syrve тимчасово недоступний', 504: 'Syrve не відповів вчасно',
+      },
+    },
+    en: {
+      about: 'What is this and how to use it →', authSeg: 'Token method', langSeg: 'Interface language',
+      v1Title: '/api/1/access_token with apiLogin', v2Title: '/api/v2/access_token with apiKey + appId + clientSecret',
+      phLogin: 'Paste apiLogin', phKey: 'Paste apiKey',
+      app: 'Application', appManual: 'Enter manually', appIdPh: 'Application ID from Developer Portal', secretPh: 'Application secret',
+      includeDisabled: 'Include disabled organizations', additionalInfo: 'Additional info (returnAdditionalInfo)',
+      loadOrgs: 'Get organizations', loading: 'Loading…', gettingOrgs: 'Loading organizations…',
+      whatToShow: 'What to show', menusJsonTitle: 'Show raw /api/2/menu response',
+      priceCat: 'Price category', noPriceCat: 'No price category',
+      orgsJsonTitle: 'Show raw /organizations response', orgsPlaceholder: 'Enter apiLogin to see organizations',
+      pickOrg: 'Select an organization', menuPickOrg: '{name} — select an organization',
+      collapse: 'Collapse all', expand2: 'Expand 2 levels', copy: 'Copy', download: 'Download',
+      searchPh: 'Search keys and values (name, id, SKU…)',
+      copied: 'Copied', copyFail: 'Could not copy', errorN: 'Error {n}', error: 'Error',
+      copyLower: 'copy', cidCopied: 'correlationId copied',
+      okV2: 'v2 token received', okV1: 'apiLogin is active', orgCount: 'organizations: {n}',
+      orgsFail: 'Could not load organizations', orgsTitle: 'Organizations ({n})', noOrgs: 'No organizations found',
+      noName: '(no name)', copyId: 'Copy id', idCopied: 'id copied', orgsRaw: 'Organizations (raw response)',
+      nomenclature: 'Nomenclature', loadingMenus: 'Loading external menus…', extMenu: 'external menu · id {id}',
+      noMenus: 'No external menus', menusRaw: 'External menus (raw response)',
+      gettingMenu: 'Loading menu…', gettingNom: 'Loading nomenclature…', mayTake: 'for large venues this can take up to a minute',
+      notJson: 'The response is not valid JSON', lines: 'lines', size: 'size',
+      items: '{n} items', fields: '{n} fields', showMore: 'Show {a} more ({b} left)', jsonCopied: 'JSON copied',
+      root: '(root)', notFound: 'Nothing found', foundSome: 'Found {t}, showing the first {n}', found: 'Found {t}',
+      hints: {
+        400: 'Bad request', 401: 'apiLogin not found or disabled', '401v2': 'Wrong apiKey, appId or clientSecret',
+        403: 'No access to this data', 404: 'Not found', 408: 'Syrve did not respond in time',
+        423: 'Cloud API license for this apiLogin has expired', 429: 'Too many requests — try again a bit later',
+        500: 'Syrve internal error', 502: 'Syrve is temporarily unavailable', 503: 'Syrve is temporarily unavailable', 504: 'Syrve did not respond in time',
+      },
+    },
+  };
+  function t(key, vars) {
+    let s = (I18N[state.lang] && I18N[state.lang][key]) ?? I18N.uk[key] ?? key;
+    if (vars) for (const [k, v] of Object.entries(vars)) s = s.split(`{${k}}`).join(String(v));
+    return s;
+  }
+  const numLocale = () => (state.lang === 'en' ? 'en-US' : 'uk-UA');
+
+  function setTitle(fn, muted) {
+    state.titleFn = fn;
+    $('viewerTitle').textContent = fn();
+    $('viewerTitle').classList.toggle('muted', !!muted);
+  }
+
+  function applyStaticTexts() {
+    document.documentElement.lang = state.lang === 'en' ? 'en' : 'uk';
+    for (const e of document.querySelectorAll('[data-i18n]')) e.textContent = t(e.dataset.i18n);
+    for (const e of document.querySelectorAll('[data-i18n-ph]')) e.placeholder = t(e.dataset.i18nPh);
+    for (const e of document.querySelectorAll('[data-i18n-title]')) e.title = t(e.dataset.i18nTitle);
+    for (const e of document.querySelectorAll('[data-i18n-aria]')) e.setAttribute('aria-label', t(e.dataset.i18nAria));
+    for (const b of document.querySelectorAll('#langSeg button')) b.classList.toggle('active', b.dataset.lang === state.lang);
+  }
+
+  // Перемальовує все, що вже показано, новою мовою
+  function setLang(lang) {
+    state.lang = lang === 'en' ? 'en' : 'uk';
+    try { localStorage.setItem(LANG_KEY, state.lang); } catch {}
+    applyStaticTexts();
+    $('apiLogin').placeholder = state.mode === 'v2' ? t('phKey') : t('phLogin');
+    if (state.titleFn) $('viewerTitle').textContent = state.titleFn();
+    if (state.okFn && !$('loginOk').classList.contains('hidden')) $('loginOk').textContent = state.okFn();
+    for (const box of document.querySelectorAll('.error')) if (box._err && !box.classList.contains('hidden')) renderError(box, box._err);
+    if (state.orgsRaw && !$('orgsHead').classList.contains('hidden')) { renderOrgs(); setActiveOrg(state.activeOrgId); }
+    if (!$('sourcesBox').classList.contains('hidden')) renderSources(false);
+    if (state.data) {
+      renderChips(state.data, state.raw);
+      renderTree(1);
+      const q = $('search').value.trim();
+      if (q) renderResults(q);
+    }
+  }
+  for (const b of document.querySelectorAll('#langSeg button')) b.addEventListener('click', () => setLang(b.dataset.lang));
 
   // ---------- утиліти ----------
   function el(tag, cls, text) {
@@ -358,8 +476,8 @@
   }
 
   async function copyText(text, msg) {
-    try { await navigator.clipboard.writeText(text); toast(msg || 'Скопійовано'); }
-    catch { toast('Не вдалося скопіювати'); }
+    try { await navigator.clipboard.writeText(text); toast(msg || t('copied')); }
+    catch { toast(t('copyFail')); }
   }
 
   function formatBytes(n) {
@@ -378,7 +496,7 @@
     if (!res.ok) {
       let j = {};
       try { j = JSON.parse(text); } catch {}
-      const err = new Error(j.error || `Помилка ${res.status}`);
+      const err = new Error(j.error || t('errorN', { n: res.status }));
       err.status = j.status || res.status;
       err.correlationId = j.correlationId;
       throw err;
@@ -386,31 +504,18 @@
     return text;
   }
 
-  // Пояснення до типових кодів помилок Syrve
-  const ERROR_HINTS = {
-    400: 'Некоректний запит',
-    401: 'apiLogin не знайдено або він вимкнений',
-    '401v2': 'Невірний apiKey, appId або clientSecret',
-    403: 'Немає доступу до цих даних',
-    404: 'Не знайдено',
-    408: 'Syrve не відповів вчасно',
-    423: 'Ліцензія Cloud API для цього apiLogin закінчилась',
-    429: 'Забагато запитів — спробуйте трохи пізніше',
-    500: 'Внутрішня помилка Syrve',
-    502: 'Syrve тимчасово недоступний',
-    503: 'Syrve тимчасово недоступний',
-    504: 'Syrve не відповів вчасно',
-  };
-
+  // Пояснення до типових кодів помилок Syrve — у словнику I18N (hints)
   function renderError(box, err) {
+    box._err = err; // щоб перекласти при зміні мови
     box.innerHTML = '';
-    const hint = (state.mode === 'v2' && ERROR_HINTS[err.status + 'v2']) || ERROR_HINTS[err.status] || 'Помилка';
+    const hints = t('hints');
+    const hint = (state.mode === 'v2' && hints[err.status + 'v2']) || hints[err.status] || t('error');
     box.appendChild(el('div', 'err-title', err.status ? `${err.status} · ${hint}` : hint));
     if (err.message && err.message !== hint) box.appendChild(el('div', 'err-msg', err.message));
     if (err.correlationId) {
       const cid = el('div', 'err-cid', 'correlationId: ' + err.correlationId);
-      const b = el('button', '', 'копіювати');
-      b.addEventListener('click', () => copyText(err.correlationId, 'correlationId скопійовано'));
+      const b = el('button', '', t('copyLower'));
+      b.addEventListener('click', () => copyText(err.correlationId, t('cidCopied')));
       cid.appendChild(b);
       box.appendChild(cid);
     }
@@ -434,16 +539,16 @@
   function setMode(mode) {
     state.mode = mode === 'v2' ? 'v2' : 'v1';
     const v2 = state.mode === 'v2';
-    for (const b of document.querySelectorAll('.seg button')) b.classList.toggle('active', b.dataset.mode === state.mode);
+    for (const b of document.querySelectorAll('#authSeg button')) b.classList.toggle('active', b.dataset.mode === state.mode);
     $('v2Fields').classList.toggle('hidden', !v2);
     $('apiLoginLabel').textContent = v2 ? 'apiKey' : 'apiLogin';
-    $('apiLogin').placeholder = v2 ? 'Вставте apiKey' : 'Вставте apiLogin';
+    $('apiLogin').placeholder = v2 ? t('phKey') : t('phLogin');
     $('loginError').classList.add('hidden');
     $('loginOk').classList.add('hidden');
     try { localStorage.setItem(MODE_KEY, state.mode); } catch {}
     renderHistory();
   }
-  for (const b of document.querySelectorAll('.seg button')) b.addEventListener('click', () => setMode(b.dataset.mode));
+  for (const b of document.querySelectorAll('#authSeg button')) b.addEventListener('click', () => setMode(b.dataset.mode));
 
   function loadApp() {
     try {
@@ -497,8 +602,10 @@
 
     const btn = $('loadOrgsBtn');
     btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span>Завантаження…';
-    $('orgs').innerHTML = '<div class="loading"><span class="spinner"></span>Отримую організації…</div>';
+    btn.innerHTML = '<span class="spinner"></span>';
+    btn.append(t('loading'));
+    $('orgs').innerHTML = '<div class="loading"><span class="spinner"></span></div>';
+    $('orgs').firstChild.append(t('gettingOrgs'));
     $('orgsHead').classList.add('hidden');
     $('sourcesBox').classList.add('hidden');
 
@@ -526,15 +633,19 @@
       state.activeOrgId = null;
       state.source = { type: 'nomenclature' };
       renderOrgs();
-      okBox.textContent = `✓ ${v2 ? 'Токен v2 отримано' : 'apiLogin активний'} · організацій: ${state.orgs.length}`;
+      const n = state.orgs.length;
+      state.okFn = () => `✓ ${v2 ? t('okV2') : t('okV1')} · ${t('orgCount', { n })}`;
+      okBox.textContent = state.okFn();
       okBox.classList.remove('hidden');
+      errBox._err = null;
       loadMenus();
     } catch (err) {
       renderError(errBox, err);
-      $('orgs').innerHTML = '<div class="placeholder">Не вдалося отримати організації</div>';
+      $('orgs').innerHTML = '';
+      $('orgs').appendChild(el('div', 'placeholder', t('orgsFail')));
     } finally {
       btn.disabled = false;
-      btn.textContent = 'Отримати організації';
+      btn.textContent = t('loadOrgs');
     }
   });
 
@@ -542,20 +653,20 @@
     const box = $('orgs');
     box.innerHTML = '';
     $('orgsHead').classList.remove('hidden');
-    $('orgsTitle').textContent = `Організації (${state.orgs.length})`;
+    $('orgsTitle').textContent = t('orgsTitle', { n: state.orgs.length });
     if (!state.orgs.length) {
-      box.appendChild(el('div', 'placeholder', 'Організацій не знайдено'));
+      box.appendChild(el('div', 'placeholder', t('noOrgs')));
       return;
     }
     for (const org of state.orgs) {
       const item = el('div', 'org');
       item.dataset.id = org.id;
-      item.appendChild(el('div', 'name', org.name || '(без назви)'));
+      item.appendChild(el('div', 'name', org.name || t('noName')));
       const idLine = el('div', 'id');
       idLine.appendChild(el('span', '', org.id));
       const copy = el('button', 'copy-id', '⧉');
-      copy.title = 'Копіювати id';
-      copy.addEventListener('click', (e) => { e.stopPropagation(); copyText(org.id, 'id скопійовано'); });
+      copy.title = t('copyId');
+      copy.addEventListener('click', (e) => { e.stopPropagation(); copyText(org.id, t('idCopied')); });
       idLine.appendChild(copy);
       item.appendChild(idLine);
       item.addEventListener('click', () => { state.activeOrg = org; loadSelected(); });
@@ -566,7 +677,8 @@
   $('orgsJsonBtn').addEventListener('click', () => {
     if (!state.orgsRaw) return;
     setActiveOrg(null);
-    showJson(state.orgsRaw, 'Організації (сира відповідь)', 'organizations.json');
+    state.requestSeq++;
+    showJson(state.orgsRaw, () => t('orgsRaw'), 'organizations.json');
   });
 
   function setActiveOrg(id) {
@@ -593,13 +705,19 @@
       $('menusJsonBtn').disabled = false;
       const cats = data.priceCategories || [];
       const sel = $('priceCat');
-      sel.innerHTML = '<option value="">Без цінової категорії</option>';
+      sel.innerHTML = '';
+      const none = el('option', '', t('noPriceCat'));
+      none.value = '';
+      none.dataset.i18n = 'noPriceCat';
+      sel.appendChild(none);
       for (const c of cats) { const o = el('option', '', c.name || c.id); o.value = c.id; sel.appendChild(o); }
       $('priceCatWrap').classList.toggle('hidden', !cats.length);
     } catch (err) {
       if (auth !== state.auth) return;
       renderError($('menusError'), err);
+      return renderSources(false);
     }
+    $('menusError')._err = null;
     renderSources(false);
   }
 
@@ -615,14 +733,14 @@
       item.addEventListener('click', () => { state.source = source; renderSources(false); loadSelected(); });
       box.appendChild(item);
     };
-    add({ type: 'nomenclature' }, 'Номенклатура', '/api/1/nomenclature');
+    add({ type: 'nomenclature' }, t('nomenclature'), '/api/1/nomenclature');
     if (loading) {
-      box.appendChild(el('div', 'muted', 'Завантажую зовнішні меню…'));
+      box.appendChild(el('div', 'muted', t('loadingMenus')));
       return;
     }
-    for (const m of state.menus) add({ type: 'menu', id: String(m.id), name: m.name }, m.name || '(без назви)', `зовнішнє меню · id ${m.id}`);
+    for (const m of state.menus) add({ type: 'menu', id: String(m.id), name: m.name }, m.name || t('noName'), t('extMenu', { id: m.id }));
     if (!state.menus.length && $('menusError').classList.contains('hidden')) {
-      box.appendChild(el('div', 'muted', 'Зовнішніх меню немає'));
+      box.appendChild(el('div', 'muted', t('noMenus')));
     }
   }
 
@@ -630,7 +748,7 @@
     if (!state.menusRaw) return;
     state.requestSeq++;
     setActiveOrg(null);
-    showJson(state.menusRaw, 'Зовнішні меню (сира відповідь)', 'menus.json');
+    showJson(state.menusRaw, () => t('menusRaw'), 'menus.json');
   });
   $('priceCat').addEventListener('change', () => { if (state.source.type === 'menu') loadSelected(); });
 
@@ -642,8 +760,8 @@
     if (!org) {
       setActiveOrg(null);
       setViewerEnabled(false);
-      $('viewerTitle').textContent = src.type === 'menu' ? `${src.name} — оберіть організацію` : 'Оберіть організацію';
-      $('viewerTitle').classList.add('muted');
+      setTitle(() => (src.type === 'menu' ? t('menuPickOrg', { name: src.name }) : t('pickOrg')), true);
+      state.data = null;
       $('chips').innerHTML = '';
       $('results').classList.add('hidden');
       $('tree').innerHTML = '';
@@ -654,11 +772,12 @@
     const title = isMenu ? `${orgName} · ${src.name}` : orgName;
     setActiveOrg(org.id);
     setViewerEnabled(false);
-    $('viewerTitle').textContent = title;
-    $('viewerTitle').classList.remove('muted');
+    setTitle(() => title, false);
+    state.data = null;
     $('chips').innerHTML = '';
     $('results').classList.add('hidden');
-    $('tree').innerHTML = `<div class="loading"><span class="spinner"></span>${isMenu ? 'Отримую меню…' : 'Отримую номенклатуру…'} для великих закладів це може зайняти до хвилини</div>`;
+    $('tree').innerHTML = '<div class="loading"><span class="spinner"></span></div>';
+    $('tree').firstChild.append(`${isMenu ? t('gettingMenu') : t('gettingNom')} ${t('mayTake')}`);
 
     try {
       const raw = isMenu
@@ -667,7 +786,7 @@
       if (seq !== state.requestSeq) return; // користувач вже обрав інше
       const safe = (s) => String(s).replace(/[\\/:*?"<>|]+/g, '_');
       const fileName = isMenu ? `menu_${safe(src.name || src.id)}_${safe(orgName)}.json` : `nomenclature_${safe(orgName)}.json`;
-      showJson(raw, title, fileName);
+      showJson(raw, () => title, fileName);
     } catch (err) {
       if (seq !== state.requestSeq) return;
       $('tree').innerHTML = '';
@@ -683,16 +802,16 @@
     if (!on) $('search').value = '';
   }
 
-  function showJson(raw, title, fileName) {
+  // titleFn — функція, що повертає заголовок (щоб він перекладався при зміні мови)
+  function showJson(raw, titleFn, fileName) {
     let data;
     try { data = JSON.parse(raw); }
-    catch { $('tree').innerHTML = ''; $('tree').appendChild(el('div', 'error', 'Відповідь не є коректним JSON')); return; }
+    catch { $('tree').innerHTML = ''; $('tree').appendChild(el('div', 'error', t('notJson'))); return; }
 
     state.raw = raw;
     state.data = data;
     state.fileName = fileName;
-    $('viewerTitle').textContent = title;
-    $('viewerTitle').classList.remove('muted');
+    setTitle(titleFn, false);
     $('search').value = '';
     $('results').classList.add('hidden');
     renderChips(data, raw);
@@ -715,8 +834,8 @@
       }
       if ('revision' in data) add('revision', data.revision);
     }
-    add('рядків', countLines(data).toLocaleString('uk-UA'));
-    add('розмір', formatBytes(new Blob([raw]).size));
+    add(t('lines'), countLines(data).toLocaleString(numLocale()));
+    add(t('size'), formatBytes(new Blob([raw]).size));
   }
 
   // Кількість рядків у відформатованому JSON (як у Postman), без побудови самого рядка
@@ -768,7 +887,7 @@
     const count = isArr ? value.length : Object.keys(value).length;
     line.classList.add('expandable');
     line.append(isArr ? '[' : '{');
-    line.appendChild(el('span', 'summary', count ? (isArr ? `${count} елем.` : `${count} полів`) : ''));
+    line.appendChild(el('span', 'summary', count ? t(isArr ? 'items' : 'fields', { n: count }) : ''));
     line.append(isArr ? ']' : '}');
     if (!isArr && typeof value.name === 'string' && value.name) line.appendChild(el('span', 'preview', value.name));
 
@@ -814,7 +933,7 @@
 
     const left = entries.length - end;
     if (left > 0) {
-      const btn = el('button', 'small more', `Показати ще ${Math.min(left, CHUNK)} (залишилось ${left})`);
+      const btn = el('button', 'small more', t('showMore', { a: Math.min(left, CHUNK), b: left }));
       btn.addEventListener('click', () => renderKids(node, node._rendered + CHUNK));
       node._kids.appendChild(btn);
       node._moreBtn = btn;
@@ -829,7 +948,7 @@
 
   $('collapseBtn').addEventListener('click', () => renderTree(1));
   $('expandBtn').addEventListener('click', () => renderTree(2));
-  $('copyBtn').addEventListener('click', () => copyText(state.raw, 'JSON скопійовано'));
+  $('copyBtn').addEventListener('click', () => copyText(state.raw, t('jsonCopied')));
   $('downloadBtn').addEventListener('click', () => {
     const pretty = JSON.stringify(state.data, null, 2);
     const url = URL.createObjectURL(new Blob([pretty], { type: 'application/json' }));
@@ -863,7 +982,7 @@
   function formatPath(path) {
     let s = '';
     for (const p of path) s += typeof p === 'number' ? `[${p}]` : (s ? '.' : '') + p;
-    return s || '(корінь)';
+    return s || t('root');
   }
 
   function search(q) {
@@ -925,8 +1044,8 @@
     const { results, total } = search(q);
     box.classList.remove('hidden');
     const info = el('div', 'results-info',
-      total === 0 ? 'Нічого не знайдено' :
-      total > results.length ? `Знайдено ${total}, показано перші ${results.length}` : `Знайдено ${total}`);
+      total === 0 ? t('notFound') :
+      total > results.length ? t('foundSome', { t: total, n: results.length }) : t('found', { t: total }));
     box.appendChild(info);
 
     for (const r of results) {
@@ -936,7 +1055,7 @@
       p.appendChild(highlight(formatPath(r.path), q));
       item.appendChild(p);
       let shown;
-      if (r.value !== null && typeof r.value === 'object') shown = Array.isArray(r.value) ? `[${r.value.length} елем.]` : '{…}';
+      if (r.value !== null && typeof r.value === 'object') shown = Array.isArray(r.value) ? `[${t('items', { n: r.value.length })}]` : '{…}';
       else shown = typeof r.value === 'string' ? JSON.stringify(r.value) : String(r.value);
       if (shown.length > 160) shown = shown.slice(0, 160) + '…';
       const v = el('div', 'v');
@@ -960,6 +1079,11 @@
   let savedMode = 'v1';
   try { savedMode = localStorage.getItem(MODE_KEY) || 'v1'; } catch {}
   $('authSeg').classList.toggle('hidden', !SHOW_V2);
+  let savedLang = 'uk';
+  try { savedLang = localStorage.getItem(LANG_KEY) || 'uk'; } catch {}
+  state.lang = savedLang === 'en' ? 'en' : 'uk';
+  applyStaticTexts();
+  setTitle(() => t('pickOrg'), true);
   setMode(SHOW_V2 ? savedMode : 'v1');
 })();
 </script>
